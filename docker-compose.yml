@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  spring-backend:
+    build:
+      context: ./spring-backend/movie-ticket-booking  # Path to your Spring Boot Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+
+  react-frontend:
+    build:
+      context: ./react-frontend/movie-ticket-booking  # Path to your React Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
