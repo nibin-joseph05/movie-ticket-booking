@@ -32,4 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 
-continue_with_google.json
+/continue_with_google.json
