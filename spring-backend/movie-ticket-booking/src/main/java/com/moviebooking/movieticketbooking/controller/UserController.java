@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("api/auth")
-@CrossOrigin(origins = "http:localhost:3000", allowCredentials = "true")
-public class userController {
+@RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+public class UserController {
     @Autowired
     private UserRepository userRepository;
 
@@ -33,6 +33,8 @@ public class userController {
         return (User) session.getAttribute("user");
     }
 
+
+    @PostMapping("/logout")
     public String logout(HttpSession session){
         session.invalidate();
         return "Logged Out Successfully";
