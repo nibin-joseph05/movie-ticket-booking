@@ -6,8 +6,20 @@ import jakarta.persistence.*;
 @Table(name = "users")
 public class User {
 
+    public User(String firstName, String lastName, String email, String phoneNumber, String password, String googleId) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.password = password;
+        this.googleId = googleId;
+    }
+
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id", updatable = false, nullable = false)
     private Long userId;
 
     @Column(nullable = false)
@@ -21,8 +33,7 @@ public class User {
     @Column(nullable = false, unique = true)
     private String phoneNumber;
 
-    @Lob
-    private String userPhoto;
+    private String userPhotoPath;
 
     private String password;
 
@@ -70,12 +81,12 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public String getUserPhoto() {
-        return userPhoto;
+    public String getUserPhotoPath() {
+        return userPhotoPath;
     }
 
-    public void setUserPhoto(String userPhoto) {
-        this.userPhoto = userPhoto;
+    public void setUserPhotoPath(String userPhotoPath) {
+        this.userPhotoPath = userPhotoPath;
     }
 
     public String getPassword() {
