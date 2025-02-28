@@ -1,0 +1,33 @@
+# Node.js
+react-frontend/node_modules/
+react-frontend/.env
+react-frontend/.next/
+react-frontend/build/
+react-frontend/dist/
+react-frontend/yarn.lock
+react-frontend/package-lock.json
+
+# Java / Spring Boot
+spring-backend/target/
+spring-backend/.classpath
+spring-backend/.project
+spring-backend/.settings/
+spring-backend/.env
+spring-backend/logs/
+spring-backend/*.log
+
+# Docker
+*.dockerignore
+**/docker-compose.override.yml
+
+# JetBrains / IntelliJ
+.idea/
+*.iml
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Misc
+.env
+.vscode/
