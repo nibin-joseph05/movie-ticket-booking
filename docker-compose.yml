@@ -15,7 +15,7 @@ services:
       SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
 
   frontend:
-    build: ./react-frontend
+    build: ./next-frontend
     ports:
       - "3000:3000"
     depends_on:
