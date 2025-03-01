@@ -1,11 +1,13 @@
-# Node.js
-react-frontend/node_modules/
-react-frontend/.env
-react-frontend/.next/
-react-frontend/build/
-react-frontend/dist/
-react-frontend/yarn.lock
-react-frontend/package-lock.json
+# Node.js (Next.js)
+next-frontend/node_modules/
+next-frontend/.next/
+next-frontend/out/
+next-frontend/.env.local
+next-frontend/.env.development.local
+next-frontend/.env.production.local
+next-frontend/package-lock.json
+next-frontend/yarn.lock
+next-frontend/npm-debug.log*
 
 # Java / Spring Boot
 spring-backend/target/
