@@ -11,7 +11,7 @@ export default function Register() {
     phoneNumber: "",
     password: "",
     confirmPassword: "",
-    photo: null,
+    userPhotoPath: null,
   });
 
   const [errors, setErrors] = useState({});
@@ -55,13 +55,37 @@ export default function Register() {
     setFormData({ ...formData, photo: e.target.files[0] });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      console.log("Registering user with:", formData);
-      // Implement API call here
-    }
-  };
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      if (!validateForm()) return;
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("firstName", formData.firstName);
+      formDataToSend.append("lastName", formData.lastName);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("phoneNumber", formData.phoneNumber);
+      formDataToSend.append("password", formData.password);
+      if (formData.userPhotoPath) {
+        formDataToSend.append("userPhotoPath", formData.userPhotoPath);
+      }
+
+      try {
+        const response = await fetch("http://localhost:8080/user/register", {
+          method: "POST",
+          body: formDataToSend,
+        });
+
+        if (response.ok) {
+          alert("User registered successfully!");
+        } else {
+          const errorText = await response.text();
+          alert(`Error: ${errorText}`);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Failed to register user.");
+      }
+    };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
