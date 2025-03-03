@@ -52,7 +52,7 @@ export default function Register() {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, photo: e.target.files[0] });
+    setFormData({ ...formData, userPhotoPath: e.target.files[0] });
   };
 
   const handleSubmit = async (e) => {
