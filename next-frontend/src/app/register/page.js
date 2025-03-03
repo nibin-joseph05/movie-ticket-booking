@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Import Next.js router
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function Register() {
+  const router = useRouter(); // Initialize router
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -56,36 +59,38 @@ export default function Register() {
   };
 
   const handleSubmit = async (e) => {
-      e.preventDefault();
-      if (!validateForm()) return;
+    e.preventDefault();
+    if (!validateForm()) return;
 
-      const formDataToSend = new FormData();
-      formDataToSend.append("firstName", formData.firstName);
-      formDataToSend.append("lastName", formData.lastName);
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("phoneNumber", formData.phoneNumber);
-      formDataToSend.append("password", formData.password);
-      if (formData.userPhotoPath) {
-        formDataToSend.append("userPhotoPath", formData.userPhotoPath);
+    const formDataToSend = new FormData();
+    formDataToSend.append("firstName", formData.firstName);
+    formDataToSend.append("lastName", formData.lastName);
+    formDataToSend.append("email", formData.email);
+    formDataToSend.append("phoneNumber", formData.phoneNumber);
+    formDataToSend.append("password", formData.password);
+    if (formData.userPhotoPath) {
+      formDataToSend.append("userPhotoPath", formData.userPhotoPath);
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/user/register", {
+        method: "POST",
+        body: formDataToSend,
+      });
+
+      const responseText = await response.text();
+
+      if (response.ok) {
+        alert(responseText); // Show success message
+        router.push("/login"); // Redirect to login page
+      } else {
+        alert(`Error: ${responseText}`); // Show error message
       }
-
-      try {
-        const response = await fetch("http://localhost:8080/user/register", {
-          method: "POST",
-          body: formDataToSend,
-        });
-
-        if (response.ok) {
-          alert("User registered successfully!");
-        } else {
-          const errorText = await response.text();
-          alert(`Error: ${errorText}`);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("Failed to register user.");
-      }
-    };
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to register user.");
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
@@ -95,7 +100,9 @@ export default function Register() {
       {/* Registration Form */}
       <section className="flex flex-grow items-center justify-center px-4">
         <div className="bg-gray-900 p-10 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700">
-          <h2 className="text-3xl font-bold text-center text-red-500 mb-6">Create Your Account</h2>
+          <h2 className="text-3xl font-bold text-center text-red-500 mb-6">
+            Create Your Account
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* First Name & Last Name */}
@@ -110,7 +117,9 @@ export default function Register() {
                   className="w-full px-4 py-3 text-black bg-gray-100 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                   required
                 />
-                {errors.firstName && <p className="text-red-400 text-sm">{errors.firstName}</p>}
+                {errors.firstName && (
+                  <p className="text-red-400 text-sm">{errors.firstName}</p>
+                )}
               </div>
 
               <div>
@@ -123,7 +132,9 @@ export default function Register() {
                   className="w-full px-4 py-3 text-black bg-gray-100 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                   required
                 />
-                {errors.lastName && <p className="text-red-400 text-sm">{errors.lastName}</p>}
+                {errors.lastName && (
+                  <p className="text-red-400 text-sm">{errors.lastName}</p>
+                )}
               </div>
             </div>
 
@@ -139,7 +150,9 @@ export default function Register() {
                   className="w-full px-4 py-3 text-black bg-gray-100 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                   required
                 />
-                {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-400 text-sm">{errors.email}</p>
+                )}
               </div>
 
               <div>
@@ -152,7 +165,9 @@ export default function Register() {
                   className="w-full px-4 py-3 text-black bg-gray-100 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                   required
                 />
-                {errors.phoneNumber && <p className="text-red-400 text-sm">{errors.phoneNumber}</p>}
+                {errors.phoneNumber && (
+                  <p className="text-red-400 text-sm">{errors.phoneNumber}</p>
+                )}
               </div>
             </div>
 
@@ -187,6 +202,7 @@ export default function Register() {
               </div>
             </div>
 
+
             {/* Photo Upload */}
             <div>
               <label className="block text-gray-300 mb-1">Upload Photo</label>
@@ -197,23 +213,13 @@ export default function Register() {
                 onChange={handleFileChange}
                 className="w-full bg-gray-100 border border-gray-500 rounded-lg p-2 text-black shadow-md"
               />
-              <p className="text-gray-400 text-sm mt-1">Photo is optional.</p>
             </div>
 
             {/* Register Button */}
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-red-500 to-pink-500 py-3 rounded-lg text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105"
-            >
+            <button type="submit" className="w-full bg-red-500 py-3 rounded-lg text-lg font-semibold">
               Register
             </button>
           </form>
-
-          {/* Already have an account? */}
-          <p className="text-center text-gray-400 mt-6">
-            Already have an account?{" "}
-            <a href="/login" className="text-red-500 hover:text-white font-semibold">Sign In</a>
-          </p>
         </div>
       </section>
 
