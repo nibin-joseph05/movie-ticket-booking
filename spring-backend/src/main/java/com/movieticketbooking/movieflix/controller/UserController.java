@@ -5,10 +5,13 @@ import com.movieticketbooking.movieflix.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.Map;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
+import java.util.Map;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
@@ -21,6 +24,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private static final String UPLOAD_DIR = System.getProperty("user.dir") + File.separator + "user_photos" + File.separator;
 
@@ -46,7 +52,7 @@ public class UserController {
         user.setLastName(lastName);
         user.setEmail(email);
         user.setPhoneNumber(phoneNumber);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password)); // Encrypt password before saving
 
         if (file != null && !file.isEmpty()) {
             try {
@@ -88,7 +94,7 @@ public class UserController {
 
         return userService.findByEmail(email)
                 .map(user -> {
-                    if (!userService.getPasswordEncoder().matches(password, user.getPassword())) {
+                    if (!passwordEncoder.matches(password, user.getPassword())) {
                         return ResponseEntity.badRequest().body(Map.of("error", "Invalid Password"));
                     }
                     userService.generateAndSendOtp(email);
@@ -96,7 +102,6 @@ public class UserController {
                 })
                 .orElse(ResponseEntity.badRequest().body(Map.of("error", "Email not registered")));
     }
-
 
     @PostMapping("/verify-otp")
     public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody Map<String, String> otpRequest) {
@@ -113,5 +118,36 @@ public class UserController {
         return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
     }
 
+    @GetMapping("/google")
+    public ResponseEntity<?> googleLogin(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "User not authenticated"));
+        }
 
+        String googleId = principal.getAttribute("sub");
+        String email = principal.getAttribute("email");
+        String firstName = principal.getAttribute("given_name");
+        String lastName = principal.getAttribute("family_name");
+
+        Optional<User> existingUser = userService.findByEmail(email);
+
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+
+            if (user.getGoogleId() == null) {
+                user.setGoogleId(googleId);
+                userService.saveUser(user);
+            }
+
+            return ResponseEntity.ok(Map.of("message", "Login Successful"));
+        } else {
+            return ResponseEntity.ok(Map.of(
+                    "message", "New Google user, complete registration",
+                    "googleId", googleId,
+                    "email", email,
+                    "firstName", firstName,
+                    "lastName", lastName
+            ));
+        }
+    }
 }

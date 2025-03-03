@@ -25,10 +25,13 @@ public class UserService {
 
     private final Map<String, String> otpStorage = new HashMap<>();
 
-    public User saveUser(User user){
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public User saveUser(User user) {
+        if (user.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         return userRepository.save(user);
     }
+
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);

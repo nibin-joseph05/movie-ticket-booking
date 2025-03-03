@@ -14,7 +14,7 @@ spring-backend/target/
 spring-backend/.classpath
 spring-backend/.project
 spring-backend/.settings/
-spring-backend/.env
+spring-backend/.env.properties
 spring-backend/logs/
 spring-backend/*.log
 

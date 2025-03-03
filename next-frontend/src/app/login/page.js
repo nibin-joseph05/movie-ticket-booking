@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -45,11 +46,14 @@ export default function Login() {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input if available
+    // Auto-focus logic
     if (value && index < 5) {
       document.getElementById(`otp-${index + 1}`)?.focus();
+    } else if (!value && index > 0) {
+      document.getElementById(`otp-${index - 1}`)?.focus(); // Move back on delete
     }
   };
+
 
   const handleOtpVerification = async () => {
     const otpCode = otp.join(""); // Convert array to string
@@ -73,6 +77,42 @@ export default function Login() {
     }
   };
 
+  useEffect(() => {
+    const fetchGoogleUser = async () => {
+      if (isOtpSent) return;
+
+      try {
+        const response = await fetch("http://localhost:8080/user/google", {
+          credentials: "include",
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.message === "New Google user, complete registration") {
+            router.push({
+              pathname: "/register",
+              query: {
+                googleId: data.googleId,
+                email: data.email,
+                firstName: data.firstName,
+                lastName: data.lastName,
+              },
+            });
+          } else {
+            router.push("/");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching Google user:", error);
+      }
+    };
+
+    fetchGoogleUser();
+  }, [isOtpSent]);
+
+
+
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
       {/* Header */}
@@ -86,15 +126,17 @@ export default function Login() {
           </h2>
 
           {/* Google Sign-In */}
-          {!isOtpSent && (
-            <button
-              onClick={() => console.log("Logging in with Google")}
-              className="w-full flex items-center justify-center bg-white text-gray-900 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-200 transition-all duration-300"
-            >
-              <Image src="/google.png" alt="Google" width={20} height={18} className="mr-2" />
-              Continue with Google
-            </button>
-          )}
+          <button
+            onClick={() => {
+              window.location.href = "http://localhost:8080/oauth2/authorization/google";
+            }}
+            className="w-full flex items-center justify-center bg-white text-gray-900 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-200 transition-all duration-300"
+          >
+            <Image src="/google.png" alt="Google" width={20} height={18} className="mr-2" />
+            Continue with Google
+          </button>
+
+
 
           {/* Separator */}
           {!isOtpSent && (
@@ -163,10 +205,16 @@ export default function Login() {
               <div className="flex justify-between gap-3">
                 <button
                   onClick={handleOtpVerification}
-                  className="w-full bg-gradient-to-r from-red-500 to-pink-500 py-2 rounded-lg text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105"
+                  disabled={otp.some((digit) => digit === "")} // Disable if any field is empty
+                  className={`w-full py-2 rounded-lg text-lg font-semibold shadow-md transition-all duration-300 ${
+                    otp.some((digit) => digit === "")
+                      ? "bg-gray-600 cursor-not-allowed"
+                      : "bg-gradient-to-r from-red-500 to-pink-500 hover:from-pink-500 hover:to-red-500 hover:scale-105"
+                  }`}
                 >
                   Verify OTP
                 </button>
+
                 <button
                   onClick={() => {
                     setIsOtpSent(false);
