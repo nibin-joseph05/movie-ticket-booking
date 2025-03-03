@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.Map;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,4 +76,42 @@ public class UserController {
         userService.saveUser(user);
         return ResponseEntity.ok("User Registered Successfully");
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> loginRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+
+        if (email == null || password == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and password are required"));
+        }
+
+        return userService.findByEmail(email)
+                .map(user -> {
+                    if (!userService.getPasswordEncoder().matches(password, user.getPassword())) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "Invalid Password"));
+                    }
+                    userService.generateAndSendOtp(email);
+                    return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
+                })
+                .orElse(ResponseEntity.badRequest().body(Map.of("error", "Email not registered")));
+    }
+
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody Map<String, String> otpRequest) {
+        String email = otpRequest.get("email");
+        String otp = otpRequest.get("otp");
+
+        if (email == null || otp == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and OTP are required"));
+        }
+
+        if (userService.verifyOtp(email, otp)) {
+            return ResponseEntity.ok(Map.of("message", "Login Successful"));
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
+    }
+
+
 }
