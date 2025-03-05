@@ -5,8 +5,15 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   const [movies, setMovies] = useState([]);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
+    // Fetch logged-in user details from session storage
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.firstName) {
+      setUserName(user.firstName);
+    }
+
     const fetchMovies = async () => {
       const movieTitles = [
         "Dune: Part Two",
@@ -28,7 +35,7 @@ export default function Home() {
           const data = await res.json();
           return {
             title: data.Title,
-            img: data.Poster !== "N/A" ? data.Poster : "/placeholder.jpg", // Use placeholder if no image
+            img: data.Poster !== "N/A" ? data.Poster : "/placeholder.jpg",
           };
         })
       );
@@ -44,16 +51,21 @@ export default function Home() {
       {/* Header */}
       <Header />
 
+      {/* Enhanced Welcome Message */}
+        {userName && (
+          <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
+            🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
+          </div>
+        )}
+
+
       {/* Hero Section */}
       <section className="relative w-full h-[60vh] flex items-center justify-center">
-        {/* Background Image */}
         <img
           src="hero-section.Webp"
           alt="Movie Night"
           className="absolute inset-0 w-full h-full object-cover"
         />
-
-        {/* Text Overlay */}
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 px-4 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
             Your <span className="text-red-500">Gateway</span> to the Silver Screen

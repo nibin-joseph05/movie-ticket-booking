@@ -37,18 +37,26 @@ public class UserService {
         return userRepository.findByPhoneNumber(phoneNumber);
     }
 
-    public void generateAndSendOtp(String email){
+    public void generateAndSendOtp(String email) {
         String otp = String.format("%06d", new Random().nextInt(999999));
         otpStorage.put(email, otp);
+
+        System.out.println("Generated OTP for " + email + " is: " + otp);
+
         emailService.sendEmail(email, "Your OTP Code", "Your OTP for login is: " + otp);
     }
-    public boolean verifyOtp(String email, String otp){
-        if(otpStorage.containsKey(email) && otpStorage.get(email).equals(otp)) {
+
+    public boolean verifyOtp(String email, String otp) {
+        System.out.println("Stored OTPs: " + otpStorage);
+        System.out.println("Verifying OTP for email: " + email + " with OTP: " + otp);
+
+        if (otpStorage.containsKey(email) && otpStorage.get(email).equals(otp)) {
             otpStorage.remove(email);
             return true;
         }
         return false;
     }
+
 
     public BCryptPasswordEncoder getPasswordEncoder() {
         return passwordEncoder;

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import axios from "axios";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -51,27 +52,32 @@ export default function Login() {
     }
   };
 
-  const handleOtpVerification = async () => {
-    const otpCode = otp.join(""); // Convert array to string
 
-    try {
-      const response = await fetch("http://localhost:8080/user/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: otpCode }),
-      });
 
-      const data = await response.json();
-      if (response.ok) {
-        alert("Login successful!");
-        router.push("/"); // Redirect to home
-      } else {
-        alert(data.message || "Invalid OTP");
+  const verifyOtp = async () => {
+      try {
+        const otpCode = otp.join(""); // Convert array to string
+        const response = await axios.post("http://localhost:8080/user/verify-otp", { email, otp: otpCode });
+
+        if (response.status === 200) {
+          const userData = response.data;
+
+          // Store user details in localStorage
+          localStorage.setItem("user", JSON.stringify(userData));
+
+          alert("Login Successful!");
+          router.push("/"); // Redirect to homepage using Next.js router
+        }
+      } catch (error) {
+        alert(error.response?.data?.error || "OTP Verification Failed");
       }
-    } catch (error) {
-      console.error("OTP verification error:", error);
-    }
+    };
+
+  const handleOtpVerification = async () => {
+    await verifyOtp();
   };
+
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
