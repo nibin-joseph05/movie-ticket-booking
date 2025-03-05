@@ -13,9 +13,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import jakarta.servlet.http.HttpSession;
+
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RequestMapping("/user")
 public class UserController {
 
@@ -97,9 +99,8 @@ public class UserController {
                 .orElse(ResponseEntity.badRequest().body(Map.of("error", "Email not registered")));
     }
 
-
     @PostMapping("/verify-otp")
-    public ResponseEntity<Map<String, String>> verifyOtp(@RequestBody Map<String, String> otpRequest) {
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> otpRequest, HttpSession session) {
         String email = otpRequest.get("email");
         String otp = otpRequest.get("otp");
 
@@ -107,11 +108,31 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "Email and OTP are required"));
         }
 
-        if (userService.verifyOtp(email, otp)) {
-            return ResponseEntity.ok(Map.of("message", "Login Successful"));
+        Optional<User> optionalUser = userService.findByEmail(email);
+        if (optionalUser.isPresent() && userService.verifyOtp(email, otp)) {
+            User user = optionalUser.get();
+            session.setAttribute("user", user);
+
+            // Return user details to the frontend
+            return ResponseEntity.ok(Map.of(
+                    "message", "Login Successful",
+                    "firstName", user.getFirstName(),
+                    "lastName", user.getLastName(),
+                    "email", user.getEmail(),
+                    "phoneNumber", user.getPhoneNumber()
+            ));
         }
+
         return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
     }
+
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpSession session) {
+        session.invalidate(); // Destroy session
+        return ResponseEntity.ok("Logged out successfully!");
+    }
+
 
 
 }

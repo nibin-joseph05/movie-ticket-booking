@@ -1,7 +1,34 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = localStorage.getItem("user");
+    if (user) setIsLoggedIn(true);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:8080/user/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      localStorage.removeItem("user");
+      setIsLoggedIn(false);
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
   return (
     <header className="bg-gray-900 text-white py-6 shadow-md">
       <div className="container mx-auto flex justify-between items-center px-6">
@@ -35,12 +62,20 @@ export default function Header() {
 
         {/* User Actions */}
         <div className="flex items-center space-x-4">
-          {/* Sign In Button with Link */}
-          <Link href="/login">
-            <button className="hidden md:block bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105">
-              Sign In
+          {isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:bg-red-700"
+            >
+              Logout
             </button>
-          </Link>
+          ) : (
+            <Link href="/login">
+              <button className="hidden md:block bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105">
+                Sign In
+              </button>
+            </Link>
+          )}
 
           {/* Mobile Menu Button */}
           <button className="md:hidden">
