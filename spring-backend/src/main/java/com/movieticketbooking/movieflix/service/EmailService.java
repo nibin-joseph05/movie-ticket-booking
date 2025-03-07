@@ -9,6 +9,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
+import org.springframework.core.io.ClassPathResource;
 
 @Service
 public class EmailService {
@@ -27,7 +28,11 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
+            // Replace the 'cid:logoImage' with the direct Imgur link
             String emailContent = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>"
+                    + "<div style='text-align: center;'>"
+                    + "<img src='https://imgur.com/MXX25b3.png' style='max-width: 150px; margin-bottom: 20px;'/>"
+                    + "</div>"
                     + "<h2 style='color: #333; text-align: center;'>Your OTP Code</h2>"
                     + "<p style='font-size: 16px; color: #555;'>Hello,</p>"
                     + "<p style='font-size: 16px; color: #555;'>Your OTP for login is:</p>"
@@ -50,4 +55,6 @@ public class EmailService {
             System.err.println("Error sending email: " + e.getMessage());
         }
     }
+
+
 }
