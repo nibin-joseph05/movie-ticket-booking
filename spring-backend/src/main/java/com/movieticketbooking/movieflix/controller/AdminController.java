@@ -10,20 +10,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/admin")
 public class AdminController {
 
     @Autowired
     private AdminService adminService;
 
-    // Register an admin
+
     @PostMapping("/register")
     public ResponseEntity<?> registerAdmin(@RequestBody Admin admin) {
         Admin savedAdmin = adminService.registerAdmin(admin);
         return ResponseEntity.ok(savedAdmin);
     }
 
-    // Admin login
+
     @PostMapping("/login")
     public ResponseEntity<?> loginAdmin(@RequestBody Map<String, String> credentials) {
         String email = credentials.get("email");

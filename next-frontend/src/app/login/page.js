@@ -13,6 +13,8 @@ export default function Login() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false); // OTP sending state
   const router = useRouter();
+  const isOtpComplete = otp.every((digit) => digit !== "");
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -74,8 +76,13 @@ export default function Login() {
     };
 
   const handleOtpVerification = async () => {
+    if (!isOtpComplete) {
+      alert("Please enter the complete OTP before verifying.");
+      return;
+    }
     await verifyOtp();
   };
+
 
 
 
@@ -145,6 +152,8 @@ export default function Login() {
               >
                 {isSendingOtp ? "Sending OTP..." : "Sign In"}
               </button>
+
+
             </form>
           ) : (
             <div className="text-center">
@@ -168,7 +177,7 @@ export default function Login() {
               {/* Verify & Cancel Buttons */}
               <div className="flex justify-between gap-3">
                 <button
-                  onClick={handleOtpVerification}
+                  disabled={!isOtpComplete} onClick={handleOtpVerification}
                   className="w-full bg-gradient-to-r from-red-500 to-pink-500 py-2 rounded-lg text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105"
                 >
                   Verify OTP
@@ -192,12 +201,19 @@ export default function Login() {
               <a href="/forgot-password" className="hover:text-white block">
                 Forgot Password?
               </a>
+
               <p className="mt-3">
                 Don't have an account?{" "}
                 <a href="/register" className="text-red-500 hover:text-white font-semibold">
                   Sign Up
                 </a>
               </p>
+              <p className="mt-3 text-center text-gray-400">
+              Are you an admin?{" "}
+              <a href="/admin-login" className="text-blue-500 hover:text-white font-semibold">
+                Login as Admin
+              </a>
+            </p>
             </div>
           )}
         </div>
