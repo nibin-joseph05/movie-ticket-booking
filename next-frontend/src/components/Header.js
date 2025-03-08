@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { FaCrosshairs } from "react-icons/fa"; // Importing Crosshair Icon
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,10 +31,10 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-gray-900 text-white py-6 shadow-md">
+    <header className="bg-gray-900 text-white py-5 shadow-lg">
       <div className="container mx-auto flex justify-between items-center px-6">
         {/* Logo */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <Image src="/logo.webp" alt="Logo" width={50} height={50} />
           <span className="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg tracking-wide">
             MovieFlix
@@ -45,33 +46,40 @@ export default function Header() {
           <input
             type="text"
             placeholder="🔍 Search for Movies, Events, Plays..."
-            className="w-full px-4 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
+            className="w-full px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
           />
         </div>
 
         {/* Navigation Links */}
         <nav className="hidden md:flex space-x-6 text-lg">
-          <a href="/" className="hover:text-red-500">Home</a>
-          <a href="#" className="hover:text-red-500">Movies</a>
-          <a href="#" className="hover:text-red-500">Stream</a>
-          <a href="#" className="hover:text-red-500">Events</a>
-          <a href="#" className="hover:text-red-500">Plays</a>
-          <a href="#" className="hover:text-red-500">Sports</a>
-          <a href="#" className="hover:text-red-500">Activities</a>
+          <a href="/" className="hover:text-red-500 transition-all duration-200">Home</a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">Movies</a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">Stream</a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">Events</a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">Sports</a>
         </nav>
 
-        {/* User Actions */}
+        {/* User Actions & Find Theaters Button */}
         <div className="flex items-center space-x-4">
+          {/* Find Theaters Button */}
+          <button
+            className="flex items-center bg-blue-600 px-5 py-3 rounded-full text-md font-semibold shadow-md transition-all duration-300 hover:bg-blue-800 transform hover:scale-105"
+          >
+            <FaCrosshairs className="mr-2 text-lg" /> Find Theaters
+          </button>
+
+          {/* Sign In / Logout */}
           {isLoggedIn ? (
             <button
               onClick={handleLogout}
-              className="bg-red-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:bg-red-700"
+              className="bg-red-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:bg-red-700 transform hover:scale-105"
             >
               Logout
             </button>
           ) : (
             <Link href="/login">
-              <button className="hidden md:block bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:scale-105">
+              <button className="bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 transform hover:scale-105">
                 Sign In
               </button>
             </Link>
