@@ -18,15 +18,11 @@ public class TheatreController {
         this.theatreService = theatreService;
     }
 
-    // Fetch nearby theatres
     @GetMapping("/nearby")
-    public ResponseEntity<List<Theatre>> getNearbyTheatres(
-            @RequestParam double lat,
-            @RequestParam double lon) {
+    public ResponseEntity<List<Theatre>> getNearbyTheatres(@RequestParam double lat, @RequestParam double lon) {
         return ResponseEntity.ok(theatreService.getNearbyTheatres(lat, lon));
     }
 
-    // Save selected theatre
     @PostMapping("/save")
     public ResponseEntity<Theatre> saveTheatre(@RequestBody Theatre theatre) {
         Theatre savedTheatre = theatreService.saveTheatre(theatre);

@@ -122,7 +122,10 @@ export default function Theatre() {
                 <div key={theatre.id} className="p-5 bg-gray-800 rounded-lg shadow-md border border-gray-700 transition-transform transform hover:scale-105">
                   <h4 className="text-lg font-semibold text-yellow-400">{theatre.name}</h4>
                   <p className="text-gray-400">{theatre.address}</p>
-                  <p className="text-green-400">{theatre.rating !== "Not Rated" ? `⭐ ${theatre.rating}` : "Not Rated"}</p>
+                  <p className="text-green-400">
+                    {theatre.rating ? `⭐ ${theatre.rating.toFixed(1)}/5` : "Not Rated"}
+                  </p>
+
                 </div>
               ))}
             </div>
