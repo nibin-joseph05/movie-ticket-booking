@@ -1,60 +1,87 @@
 package com.movieticketbooking.movieflix.service;
 
-import com.movieticketbooking.movieflix.models.Theatre;
-import com.movieticketbooking.movieflix.repository.TheatreRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.movieticketbooking.movieflix.models.Theatre;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import java.util.*;
 
 @Service
 public class TheatreService {
 
     @Value("${google.api.key}")
-    private String googleApiKey;
+    private String apiKey;
 
-    private final TheatreRepository theatreRepository;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
-    public TheatreService(TheatreRepository theatreRepository, RestTemplate restTemplate) {
-        this.theatreRepository = theatreRepository;
+    public TheatreService(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
     }
 
-    // Fetch nearby theatres
     public List<Theatre> getNearbyTheatres(double lat, double lon) {
-        String url = String.format(
-                "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=%f,%f&radius=5000&type=movie_theater&key=%s",
-                lat, lon, googleApiKey
-        );
-
-        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
         List<Theatre> theatres = new ArrayList<>();
 
-        if (response != null && response.containsKey("results")) {
-            List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
+        String url = "https://places.googleapis.com/v1/places:searchNearby?key=" + apiKey;
 
-            for (Map<String, Object> result : results) {
-                String placeId = (String) result.get("place_id");
-                String name = (String) result.get("name");
-                String address = (String) result.get("vicinity");
-                Double rating = result.get("rating") != null ? ((Number) result.get("rating")).doubleValue() : 0.0;
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("includedTypes", List.of("movie_theater"));
 
-                Theatre theatre = new Theatre(placeId, name, address, rating);
-                theatres.add(theatre);
+        Map<String, Object> locationRestriction = new HashMap<>();
+        Map<String, Object> circle = new HashMap<>();
+        Map<String, Object> center = new HashMap<>();
+
+        center.put("latitude", lat);
+        center.put("longitude", lon);
+        circle.put("center", center);
+        circle.put("radius", 5000); // 5 km radius
+        locationRestriction.put("circle", circle);
+
+        requestBody.put("locationRestriction", locationRestriction);
+
+        // Set headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Goog-Api-Key", apiKey); // ✅ Add API Key in header
+        headers.set("X-Goog-FieldMask", "places.displayName,places.id,places.location,places.rating,places.formattedAddress");
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+
+            if (response.getStatusCode() == HttpStatus.OK) {
+                // Parse JSON response
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode places = root.path("places");
+
+                for (JsonNode place : places) {
+                    String id = place.path("id").asText();
+                    String name = place.path("displayName").path("text").asText();
+                    double theatreLat = place.path("location").path("latitude").asDouble();
+                    double theatreLon = place.path("location").path("longitude").asDouble();
+                    Double rating = place.has("rating") ? place.path("rating").asDouble() : null;
+
+                    String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
+
+                    Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address);
+                    theatres.add(theatre);
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return theatres;
     }
 
-    // Save selected theatre
     public Theatre saveTheatre(Theatre theatre) {
-        if (!theatreRepository.existsByPlaceId(theatre.getPlaceId())) {
-            return theatreRepository.save(theatre);
-        }
-        return null; // Already exists
+        return theatre;
     }
 }
