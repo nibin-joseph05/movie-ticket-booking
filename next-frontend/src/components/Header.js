@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaCrosshairs } from "react-icons/fa"; // Importing Crosshair Icon
+import { FaCrosshairs } from "react-icons/fa";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -64,26 +64,30 @@ export default function Header() {
         <div className="flex items-center space-x-4">
           {/* Find Theaters Button */}
           <button
-            className="flex items-center bg-blue-600 px-5 py-3 rounded-full text-md font-semibold shadow-md transition-all duration-300 hover:bg-blue-800 transform hover:scale-105"
+            onClick={() => router.push("/theatre")}
+            className="flex items-center bg-blue-600 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
           >
-            <FaCrosshairs className="mr-2 text-lg" /> Find Theaters
+            <FaCrosshairs className="mr-2 text-base" />
+            Find Theaters
           </button>
+
 
           {/* Sign In / Logout */}
           {isLoggedIn ? (
             <button
               onClick={handleLogout}
-              className="bg-red-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:bg-red-700 transform hover:scale-105"
+              className="bg-red-500 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:bg-red-700 hover:shadow-lg transform hover:scale-105"
             >
               Logout
             </button>
           ) : (
             <Link href="/login">
-              <button className="bg-gradient-to-r from-red-500 to-pink-500 px-6 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 transform hover:scale-105">
+              <button className="flex items-center bg-gradient-to-r from-red-500 to-pink-500 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:shadow-lg transform hover:scale-105">
                 Sign In
               </button>
             </Link>
           )}
+
 
           {/* Mobile Menu Button */}
           <button className="md:hidden">
