@@ -72,7 +72,8 @@ public class TheatreService {
                         String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
                         String phoneNumber = place.has("internationalPhoneNumber") ? place.path("internationalPhoneNumber").asText() : "Not Available";
 
-                        // Extract opening hours
+                        double distance = calculateDistance(lat, lon, theatreLat, theatreLon);
+
                         String openingHours = "Not Available";
                         if (place.has("currentOpeningHours")) {
                             JsonNode openingHoursNode = place.path("currentOpeningHours").path("weekdayDescriptions");
@@ -85,7 +86,7 @@ public class TheatreService {
                             }
                         }
 
-                        Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address, phoneNumber, openingHours);
+                        Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address, phoneNumber, openingHours, distance);
                         theatres.add(theatre);
                     }
                 }
@@ -94,6 +95,19 @@ public class TheatreService {
             e.printStackTrace();
         }
         return theatres;
+    }
+
+
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Earth radius in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
 
