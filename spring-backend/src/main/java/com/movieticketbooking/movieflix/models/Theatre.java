@@ -9,6 +9,21 @@ import jakarta.validation.constraints.*;
 @Table(name = "theatres")
 public class Theatre {
 
+    public Theatre() {}
+
+    public Theatre(String id, String name, double latitude, double longitude, Double rating, String address, String phoneNumber, String openingHours, Double distance) {
+        this.id = id;
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.rating = rating;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
+        this.openingHours = openingHours;
+        this.distance = distance;
+    }
+
+
     @Id
     @NotBlank(message = "Theatre ID cannot be blank")
     private String id;
@@ -36,18 +51,7 @@ public class Theatre {
 
     private String openingHours;
 
-    public Theatre() {}
-
-    public Theatre(String id, String name, double latitude, double longitude, Double rating, String address, String phoneNumber, String openingHours) {
-        this.id = id;
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.rating = rating;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.openingHours = openingHours;
-    }
+    private double distance;
 
     // Getters and Setters
     public String getId() {
@@ -60,6 +64,14 @@ public class Theatre {
 
     public String getName() {
         return name;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
     }
 
     public void setName(String name) {

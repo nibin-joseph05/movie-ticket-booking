@@ -47,10 +47,32 @@ export default function Theatre() {
       const data = await res.json();
 
       if (data.status === "OK" && data.results.length > 0) {
-        const city = data.results[0].address_components.find((component) =>
-          component.types.includes("locality")
-        )?.long_name || "Unknown Location";
-        setLocation(city);
+        let exactLocation = "Unknown Location";
+        let district = "";
+        let state = "";
+
+        // Loop through all results to find the best match
+        for (const result of data.results) {
+          for (const component of result.address_components) {
+            if (component.types.includes("locality")) {
+              exactLocation = component.long_name; // Town/Village name
+            } else if (component.types.includes("administrative_area_level_2")) {
+              district = component.long_name; // District
+            } else if (component.types.includes("administrative_area_level_1")) {
+              state = component.long_name; // State
+            }
+          }
+        }
+
+        // Construct the final location name
+        if (district && exactLocation !== district) {
+          exactLocation += `, ${district}`;
+        }
+        if (state) {
+          exactLocation += `, ${state}`;
+        }
+
+        setLocation(exactLocation);
       } else {
         setLocation("Unknown Location");
       }
@@ -59,6 +81,9 @@ export default function Theatre() {
       setLocation("Unknown Location");
     }
   };
+
+
+
 
   // Fetch nearby theaters using the backend
   const fetchNearbyTheatres = async (lat, lon) => {
@@ -135,6 +160,8 @@ export default function Theatre() {
                   <p className="text-green-400 text-lg mt-2">
                     {theatre.rating ? `⭐ ${theatre.rating.toFixed(1)}/5` : "Not Rated"}
                   </p>
+                  <p className="text-blue-400 text-lg mt-2">📍 {theatre.distance.toFixed(2)} km away</p>
+
 
                   {/* Extra Details */}
                   <div className="mt-3 text-gray-300 text-sm space-y-2">
