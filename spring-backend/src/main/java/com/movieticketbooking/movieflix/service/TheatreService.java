@@ -41,7 +41,7 @@ public class TheatreService {
         center.put("latitude", lat);
         center.put("longitude", lon);
         circle.put("center", center);
-        circle.put("radius", 5000); // 5 km radius
+        circle.put("radius", 10000); // Expand radius to 10 km
         locationRestriction.put("circle", circle);
 
         requestBody.put("locationRestriction", locationRestriction);
@@ -49,9 +49,8 @@ public class TheatreService {
         // Set headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("X-Goog-Api-Key", apiKey); // ✅ Add API Key in header
-        headers.set("X-Goog-FieldMask", "places.displayName,places.id,places.location,places.rating,places.formattedAddress");
-
+        headers.set("X-Goog-Api-Key", apiKey);
+        headers.set("X-Goog-FieldMask", "places.displayName,places.id,places.location,places.rating,places.formattedAddress,places.internationalPhoneNumber,places.websiteUri,places.currentOpeningHours,places.types");
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
         try {
@@ -63,16 +62,32 @@ public class TheatreService {
                 JsonNode places = root.path("places");
 
                 for (JsonNode place : places) {
-                    String id = place.path("id").asText();
-                    String name = place.path("displayName").path("text").asText();
-                    double theatreLat = place.path("location").path("latitude").asDouble();
-                    double theatreLon = place.path("location").path("longitude").asDouble();
-                    Double rating = place.has("rating") ? place.path("rating").asDouble() : null;
+                    // Ensure it is categorized as a movie theater
+                    if (place.has("types") && place.path("types").toString().contains("movie_theater")) {
+                        String id = place.path("id").asText();
+                        String name = place.path("displayName").path("text").asText();
+                        double theatreLat = place.path("location").path("latitude").asDouble();
+                        double theatreLon = place.path("location").path("longitude").asDouble();
+                        Double rating = place.has("rating") ? place.path("rating").asDouble() : null;
+                        String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
+                        String phoneNumber = place.has("internationalPhoneNumber") ? place.path("internationalPhoneNumber").asText() : "Not Available";
 
-                    String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
+                        // Extract opening hours
+                        String openingHours = "Not Available";
+                        if (place.has("currentOpeningHours")) {
+                            JsonNode openingHoursNode = place.path("currentOpeningHours").path("weekdayDescriptions");
+                            if (openingHoursNode.isArray()) {
+                                List<String> hoursList = new ArrayList<>();
+                                for (JsonNode day : openingHoursNode) {
+                                    hoursList.add(day.asText());
+                                }
+                                openingHours = String.join(", ", hoursList);
+                            }
+                        }
 
-                    Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address);
-                    theatres.add(theatre);
+                        Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address, phoneNumber, openingHours);
+                        theatres.add(theatre);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -80,6 +95,7 @@ public class TheatreService {
         }
         return theatres;
     }
+
 
     public Theatre saveTheatre(Theatre theatre) {
         return theatre;
