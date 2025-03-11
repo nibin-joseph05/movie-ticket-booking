@@ -39,13 +39,13 @@ export default function Home() {
         </div>
       )}
 
-      <section className="relative w-full h-[50vh] flex items-center justify-center">
+      <section className="relative w-full h-[60vh] flex items-center justify-center">
         <img
           src="hero-section.Webp"
           alt="Movie Night"
           className="absolute inset-0 w-full h-full object-cover brightness-100"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 px-4 text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
             Your <span className="text-red-500">Gateway</span> to the Silver Screen
           </h1>

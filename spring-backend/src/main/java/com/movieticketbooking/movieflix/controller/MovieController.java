@@ -8,9 +8,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -23,9 +22,16 @@ public class MovieController {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping("/now-playing")
-    public ResponseEntity<Map<String, Object>> getNowPlayingMovies(@RequestParam(defaultValue = "1") int page) {
+    public ResponseEntity<Map<String, Object>> getNowPlayingMovies(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String language) {
+
+        String lang = language != null ? language : "en-US";
+        String region = "IN";
+
         String moviesUrl = "https://api.themoviedb.org/3/movie/now_playing?api_key=" + tmdbApiKey +
-                "&language=en-US&region=IN&page=" + page;
+                "&language=" + lang + "&region=" + region + "&page=" + page;
 
         String genresUrl = "https://api.themoviedb.org/3/genre/movie/list?api_key=" + tmdbApiKey + "&language=en-US";
 
@@ -33,13 +39,13 @@ public class MovieController {
         Map<String, Object> genreResponse = restTemplate.getForObject(genresUrl, Map.class);
 
         List<Map<String, Object>> genresList = (List<Map<String, Object>>) genreResponse.get("genres");
-        Map<Integer, String> genreMap = new HashMap<>();
-
-        for (Map<String, Object> genre : genresList) {
-            genreMap.put((Integer) genre.get("id"), (String) genre.get("name"));
-        }
+        Map<Integer, String> genreMap = genresList.stream()
+                .collect(Collectors.toMap(g -> (Integer) g.get("id"), g -> (String) g.get("name")));
 
         List<Map<String, Object>> movies = (List<Map<String, Object>>) movieResponse.get("results");
+
+        // Process movies and add genre names
+        List<Map<String, Object>> filteredMovies = new ArrayList<>();
 
         for (Map<String, Object> movie : movies) {
             List<Integer> genreIds = (List<Integer>) movie.get("genre_ids");
@@ -50,14 +56,40 @@ public class MovieController {
                     genreNames.append(genreMap.get(genreId)).append(", ");
                 }
             }
-
             if (genreNames.length() > 0) {
                 genreNames.setLength(genreNames.length() - 2);
             }
-
             movie.put("genres", genreNames.toString());
+
+            // Apply Filters
+            boolean matchesGenre = (genre == null || Arrays.asList(genreNames.toString().split(", ")).contains(genre));
+            boolean matchesLanguage = (language == null || language.equalsIgnoreCase((String) movie.get("original_language")));
+
+            if (matchesGenre && matchesLanguage) {
+                filteredMovies.add(movie);
+            }
         }
 
+        movieResponse.put("results", filteredMovies);
         return ResponseEntity.ok(movieResponse);
     }
+
+    @GetMapping("/genres")
+    public ResponseEntity<List<String>> getGenres() {
+        String genresUrl = "https://api.themoviedb.org/3/genre/movie/list?api_key=" + tmdbApiKey + "&language=en-US";
+        Map<String, Object> genreResponse = restTemplate.getForObject(genresUrl, Map.class);
+
+        if (genreResponse == null || !genreResponse.containsKey("genres")) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<Map<String, Object>> genresList = (List<Map<String, Object>>) genreResponse.get("genres");
+        List<String> genreNames = genresList.stream()
+                .map(g -> (String) g.get("name"))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(genreNames);
+    }
+
+
 }
