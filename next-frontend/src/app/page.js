@@ -1,46 +1,29 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import axios from "axios";
 
 export default function Home() {
   const [movies, setMovies] = useState([]);
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    // Fetch logged-in user details from session storage
     const user = JSON.parse(localStorage.getItem("user"));
     if (user && user.firstName) {
       setUserName(user.firstName);
     }
 
     const fetchMovies = async () => {
-      const movieTitles = [
-        "Dune: Part Two",
-        "Mission: Impossible - Dead Reckoning", // Replaced Deadpool 3
-        "Oppenheimer",
-        "The Marvels", // Replaced John Wick 4
-        "Spider-Man: No Way Home",
-        "The Batman",
-        "Fast X",
-        "Avatar: The Way of Water",
-      ];
-
-      const apiKey = "c5822fcd"; // Your OMDb API key
-      const movieData = await Promise.all(
-        movieTitles.map(async (title) => {
-          const res = await fetch(
-            `https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${apiKey}`
-          );
-          const data = await res.json();
-          return {
-            title: data.Title || title, // Fallback to original title
-            img: data.Poster && data.Poster !== "N/A" ? data.Poster : "/placeholder.jpg",
-          };
-        })
-      );
-
-      setMovies(movieData);
+      try {
+        const res = await axios.get("http://localhost:8080/movies/now-playing");
+        if (res.data && res.data.results) {
+          setMovies(res.data.results);
+        }
+      } catch (error) {
+        console.error("Error fetching movies:", error);
+      }
     };
 
     fetchMovies();
@@ -48,22 +31,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
-      {/* Header */}
       <Header />
 
-      {/* Enhanced Welcome Message */}
       {userName && (
         <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
           🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="relative w-full h-[60vh] flex items-center justify-center">
+      <section className="relative w-full h-[50vh] flex items-center justify-center">
         <img
           src="hero-section.Webp"
           alt="Movie Night"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover brightness-100"
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 px-4 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
@@ -75,28 +55,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trending Movies Section */}
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 py-12">
-        <h3 className="text-3xl font-bold mb-8 text-red-500 text-center">
-          🎬 Trending Now
+        <h3 className="text-3xl font-bold mb-8 text-red-500 text-center border-b-4 border-red-600 pb-2">
+          🎬 Recommended Movies
         </h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {movies.map((movie, index) => (
-            <div
-              key={index}
-              className="relative w-full h-[250px] sm:h-[300px] bg-cover bg-center rounded-lg shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl"
-              style={{ backgroundImage: `url(${movie.img})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4 rounded-lg">
-                <h4 className="text-lg font-bold text-white">{movie.title}</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {movies.map((movie) => (
+            <Link key={movie.id} href={`/movie/${movie.id}`} passHref>
+              <div
+                className="relative w-full h-[380px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden group transition-transform transform hover:scale-105 hover:shadow-xl flex flex-col justify-end cursor-pointer"
+                style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <h4 className="text-xl font-bold text-white mb-2">{movie.title}</h4>
+                  <p className="text-sm text-gray-300 mb-2">{movie.overview.slice(0, 120)}...</p>
+                  <span className="mt-2 text-yellow-400 font-semibold text-lg">
+                    ⭐ {movie.vote_average.toFixed(1)}
+                  </span>
+                  <p className="mt-2 text-gray-300 text-sm font-medium">🎭 {movie.genres || "Unknown"}</p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
