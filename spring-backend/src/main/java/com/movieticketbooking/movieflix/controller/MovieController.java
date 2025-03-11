@@ -44,7 +44,6 @@ public class MovieController {
 
         List<Map<String, Object>> movies = (List<Map<String, Object>>) movieResponse.get("results");
 
-        // Process movies and add genre names
         List<Map<String, Object>> filteredMovies = new ArrayList<>();
 
         for (Map<String, Object> movie : movies) {
@@ -90,6 +89,82 @@ public class MovieController {
 
         return ResponseEntity.ok(genreNames);
     }
+
+    @GetMapping("/details")
+    public ResponseEntity<Map<String, Object>> getMovieDetails(@RequestParam String id) {
+        String movieUrl = "https://api.themoviedb.org/3/movie/" + id + "?api_key=" + tmdbApiKey + "&language=en-US";
+        String creditsUrl = "https://api.themoviedb.org/3/movie/" + id + "/credits?api_key=" + tmdbApiKey;
+        String videosUrl = "https://api.themoviedb.org/3/movie/" + id + "/videos?api_key=" + tmdbApiKey;
+        String nowPlayingUrl = "https://api.themoviedb.org/3/movie/now_playing?api_key=" + tmdbApiKey + "&language=en-US&region=IN";
+
+        Map<String, Object> movieDetails = restTemplate.getForObject(movieUrl, Map.class);
+        Map<String, Object> creditsResponse = restTemplate.getForObject(creditsUrl, Map.class);
+        Map<String, Object> videosResponse = restTemplate.getForObject(videosUrl, Map.class);
+        Map<String, Object> nowPlayingResponse = restTemplate.getForObject(nowPlayingUrl, Map.class);
+
+        if (movieDetails == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Check if the movie is currently playing
+        List<Map<String, Object>> nowPlayingMovies = (List<Map<String, Object>>) nowPlayingResponse.get("results");
+        boolean isNowPlaying = nowPlayingMovies.stream()
+                .anyMatch(movie -> String.valueOf(movie.get("id")).equals(id));
+
+        movieDetails.put("isNowPlaying", isNowPlaying);
+
+        // Fetch Cast
+        List<Map<String, Object>> castList = (List<Map<String, Object>>) creditsResponse.get("cast");
+        List<Map<String, Object>> limitedCast = castList.stream()
+                .limit(10)
+                .map(cast -> Map.of(
+                        "id", cast.get("id"),
+                        "name", cast.get("name"),
+                        "character", cast.get("character"),
+                        "profile_path", cast.get("profile_path")
+                ))
+                .collect(Collectors.toList());
+
+        // Fetch Crew (Director & Others)
+        List<Map<String, Object>> crewList = (List<Map<String, Object>>) creditsResponse.get("crew");
+        List<Map<String, Object>> directors = crewList.stream()
+                .filter(member -> "Director".equals(member.get("job")))
+                .map(director -> Map.of(
+                        "id", director.get("id"),
+                        "name", director.get("name"),
+                        "profile_path", director.get("profile_path"),
+                        "job", director.get("job")
+                ))
+                .collect(Collectors.toList());
+
+        // Fetch Trailer
+        List<Map<String, Object>> videoResults = (List<Map<String, Object>>) videosResponse.get("results");
+        Optional<String> trailerKey = videoResults.stream()
+                .filter(video -> "Trailer".equals(video.get("type")) && "YouTube".equals(video.get("site")))
+                .map(video -> (String) video.get("key"))
+                .findFirst();
+
+        // Add to Response
+        movieDetails.put("language", movieDetails.get("original_language"));
+        movieDetails.put("cast", limitedCast);
+        movieDetails.put("crew", directors);
+        trailerKey.ifPresent(trailer -> movieDetails.put("trailer", trailer));
+
+        return ResponseEntity.ok(movieDetails);
+    }
+
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Map<String, Object>>> searchMovies(@RequestParam String name) {
+        String searchUrl = "https://api.themoviedb.org/3/search/movie?api_key=" + tmdbApiKey + "&query=" + name + "&language=en-US";
+
+        Map<String, Object> response = restTemplate.getForObject(searchUrl, Map.class);
+        List<Map<String, Object>> movies = (List<Map<String, Object>>) response.get("results");
+
+        return ResponseEntity.ok(movies);
+    }
+
+
 
 
 }

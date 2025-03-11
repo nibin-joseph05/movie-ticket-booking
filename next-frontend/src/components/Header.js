@@ -4,13 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FaCrosshairs } from "react-icons/fa";
+import { debounce } from "lodash";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in
     const user = localStorage.getItem("user");
     if (user) setIsLoggedIn(true);
   }, []);
@@ -30,8 +33,37 @@ export default function Header() {
     }
   };
 
+  const fetchMovies = debounce(async (query) => {
+      if (query.length > 2) {
+        setLoading(true);
+        try {
+          const response = await fetch(`http://localhost:8080/movies/search?name=${query}`);
+          const data = await response.json();
+          setSearchResults(data.length ? data : []); // Handle empty results
+        } catch (error) {
+          console.error("Error fetching search results", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300); // 300ms debounce
+
+    const handleSearch = (e) => {
+      const query = e.target.value;
+      setSearchQuery(query);
+      fetchMovies(query);
+    };
+
+  const handleMovieClick = (movieId) => {
+    router.push(`/movies/${movieId}`);
+    setSearchQuery(""); // Clear search input
+    setSearchResults([]); // Hide search results
+  };
+
   return (
-    <header className="bg-gray-900 text-white py-5 shadow-lg">
+    <header className="bg-gray-900 text-white py-5 shadow-lg relative">
       <div className="container mx-auto flex justify-between items-center px-6">
         {/* Logo */}
         <div className="flex items-center space-x-3">
@@ -42,27 +74,64 @@ export default function Header() {
         </div>
 
         {/* Search Bar */}
-        <div className="flex-1 mx-6 max-w-lg hidden sm:block">
+        <div className="relative">
           <input
             type="text"
-            placeholder="🔍 Search for Movies, Events, Plays..."
-            className="w-full px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
+            placeholder="🔍 Search for Movies..."
+            className="w-118 px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
+            value={searchQuery}
+            onChange={handleSearch}
           />
+
+          {/* Search Results Dropdown */}
+          {searchQuery && (
+            <div className="absolute top-full left-0 w-full bg-white text-black border border-gray-300 rounded-lg shadow-lg mt-1 z-50">
+              {loading ? (
+                <div className="p-3 text-center text-gray-500">Loading...</div>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((movie) => (
+                  <div
+                    key={movie.id}
+                    className="flex items-center p-3 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => handleMovieClick(movie.id)}
+                  >
+                    <img
+                      src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                      alt={movie.title}
+                      className="w-16 h-24 object-cover rounded-lg mr-3"
+                    />
+
+                    <div>
+                      <p className="font-semibold">{movie.title}</p>
+                      <p className="text-gray-500 text-sm">{movie.year}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 text-center text-gray-500">No results found</div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Navigation Links */}
         <nav className="hidden md:flex space-x-6 text-lg">
-          <a href="/" className="hover:text-red-500 transition-all duration-200">Home</a>
-          <a href="/movies" className="hover:text-red-500 transition-all duration-200">Movies</a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">Stream</a>
+          <a href="/" className="hover:text-red-500 transition-all duration-200">
+            Home
+          </a>
+          <a href="/movies" className="hover:text-red-500 transition-all duration-200">
+            Movies
+          </a>
+          <a href="#" className="hover:text-red-500 transition-all duration-200">
+            Stream
+          </a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Events</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Sports</a>
         </nav>
 
-        {/* User Actions & Find Theaters Button */}
+        {/* User Actions */}
         <div className="flex items-center space-x-4">
-          {/* Find Theaters Button */}
           <button
             onClick={() => router.push("/theatre")}
             className="flex items-center bg-blue-600 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
@@ -71,8 +140,6 @@ export default function Header() {
             Find Theaters
           </button>
 
-
-          {/* Sign In / Logout */}
           {isLoggedIn ? (
             <button
               onClick={handleLogout}
@@ -82,19 +149,11 @@ export default function Header() {
             </button>
           ) : (
             <Link href="/login">
-              <button className="flex items-center bg-gradient-to-r from-red-500 to-pink-500 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:shadow-lg transform hover:scale-105">
+              <button className="bg-gradient-to-r from-red-500 to-pink-500 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:shadow-lg transform hover:scale-105">
                 Sign In
               </button>
             </Link>
           )}
-
-
-          {/* Mobile Menu Button */}
-          <button className="md:hidden">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
         </div>
       </div>
     </header>
