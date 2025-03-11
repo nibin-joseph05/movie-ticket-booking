@@ -41,7 +41,7 @@ public class TheatreService {
         center.put("latitude", lat);
         center.put("longitude", lon);
         circle.put("center", center);
-        circle.put("radius", 10000); // Expand radius to 10 km
+        circle.put("radius", 25000);
         locationRestriction.put("circle", circle);
 
         requestBody.put("locationRestriction", locationRestriction);
@@ -62,34 +62,48 @@ public class TheatreService {
                 JsonNode places = root.path("places");
 
                 for (JsonNode place : places) {
-                    // Ensure it is categorized as a movie theater
-                    if (place.has("types") && place.path("types").toString().contains("movie_theater")) {
-                        String id = place.path("id").asText();
-                        String name = place.path("displayName").path("text").asText();
-                        double theatreLat = place.path("location").path("latitude").asDouble();
-                        double theatreLon = place.path("location").path("longitude").asDouble();
-                        Double rating = place.has("rating") ? place.path("rating").asDouble() : null;
-                        String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
-                        String phoneNumber = place.has("internationalPhoneNumber") ? place.path("internationalPhoneNumber").asText() : "Not Available";
-
-                        double distance = calculateDistance(lat, lon, theatreLat, theatreLon);
-
-                        String openingHours = "Not Available";
-                        if (place.has("currentOpeningHours")) {
-                            JsonNode openingHoursNode = place.path("currentOpeningHours").path("weekdayDescriptions");
-                            if (openingHoursNode.isArray()) {
-                                List<String> hoursList = new ArrayList<>();
-                                for (JsonNode day : openingHoursNode) {
-                                    hoursList.add(day.asText());
-                                }
-                                openingHours = String.join(", ", hoursList);
-                            }
-                        }
-
-                        Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address, phoneNumber, openingHours, distance);
-                        theatres.add(theatre);
+                    // Ensure "movie_theater" is in the types list
+                    JsonNode typesNode = place.path("types");
+                    List<String> types = new ArrayList<>();
+                    for (JsonNode type : typesNode) {
+                        types.add(type.asText());
                     }
+
+                    if (!types.contains("movie_theater")) {
+                        continue;
+                    }
+
+
+
+
+                    // Extract relevant details
+                    String id = place.path("id").asText();
+                    String name = place.path("displayName").path("text").asText();
+                    double theatreLat = place.path("location").path("latitude").asDouble();
+                    double theatreLon = place.path("location").path("longitude").asDouble();
+                    Double rating = place.has("rating") ? place.path("rating").asDouble() : null;
+                    String address = place.has("formattedAddress") ? place.path("formattedAddress").asText() : "Address not available";
+                    String phoneNumber = place.has("internationalPhoneNumber") ? place.path("internationalPhoneNumber").asText() : "Not Available";
+
+                    double distance = calculateDistance(lat, lon, theatreLat, theatreLon);
+
+                    String openingHours = "Not Available";
+                    if (place.has("currentOpeningHours")) {
+                        JsonNode openingHoursNode = place.path("currentOpeningHours").path("weekdayDescriptions");
+                        if (openingHoursNode.isArray()) {
+                            List<String> hoursList = new ArrayList<>();
+                            for (JsonNode day : openingHoursNode) {
+                                hoursList.add(day.asText());
+                            }
+                            openingHours = String.join(", ", hoursList);
+                        }
+                    }
+
+                    Theatre theatre = new Theatre(id, name, theatreLat, theatreLon, rating, address, phoneNumber, openingHours, distance);
+                    theatres.add(theatre);
                 }
+
+
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -17,9 +17,9 @@ export default function Home() {
     const fetchMovies = async () => {
       const movieTitles = [
         "Dune: Part Two",
-        "Deadpool 3",
+        "Mission: Impossible - Dead Reckoning", // Replaced Deadpool 3
         "Oppenheimer",
-        "John Wick 4",
+        "The Marvels", // Replaced John Wick 4
         "Spider-Man: No Way Home",
         "The Batman",
         "Fast X",
@@ -34,8 +34,8 @@ export default function Home() {
           );
           const data = await res.json();
           return {
-            title: data.Title,
-            img: data.Poster !== "N/A" ? data.Poster : "/placeholder.jpg",
+            title: data.Title || title, // Fallback to original title
+            img: data.Poster && data.Poster !== "N/A" ? data.Poster : "/placeholder.jpg",
           };
         })
       );
@@ -52,12 +52,11 @@ export default function Home() {
       <Header />
 
       {/* Enhanced Welcome Message */}
-        {userName && (
-          <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
-            🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
-          </div>
-        )}
-
+      {userName && (
+        <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
+          🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="relative w-full h-[60vh] flex items-center justify-center">
