@@ -53,7 +53,7 @@ export default function Header() {
         {/* Navigation Links */}
         <nav className="hidden md:flex space-x-6 text-lg">
           <a href="/" className="hover:text-red-500 transition-all duration-200">Home</a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">Movies</a>
+          <a href="/movies" className="hover:text-red-500 transition-all duration-200">Movies</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Stream</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Events</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>
