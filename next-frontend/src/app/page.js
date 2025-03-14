@@ -45,7 +45,7 @@ export default function Home() {
           alt="Movie Night"
           className="absolute inset-0 w-full h-full object-cover brightness-100"
         />
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
             Your <span className="text-red-500">Gateway</span> to the Silver Screen
           </h1>
@@ -60,25 +60,41 @@ export default function Home() {
           🎬 Recommended Movies
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {movies.map((movie) => (
-            <Link key={movie.id} href={`/movies/${movie.id}`} passHref>
-              <div
-                className="relative w-full h-[380px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden group transition-transform transform hover:scale-105 hover:shadow-xl flex flex-col justify-end cursor-pointer"
-                style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <h4 className="text-xl font-bold text-white mb-2">{movie.title}</h4>
-                  <p className="text-sm text-gray-300 mb-2">{movie.overview.slice(0, 120)}...</p>
-                  <span className="mt-2 text-yellow-400 font-semibold text-lg">
-                    ⭐ {movie.vote_average.toFixed(1)}
-                  </span>
-                  <p className="mt-2 text-gray-300 text-sm font-medium">🎭 {movie.genres || "Unknown"}</p>
+        {movies.length === 0 ? (
+          // **No movies available message**
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+            <h2 className="text-4xl font-extrabold text-red-500 mt-4 animate-bounce">
+              Oops! No Movies Available
+            </h2>
+            <p className="text-lg text-gray-400 mt-2 max-w-md">
+              Currently, we couldn't find any movies to display. <br />
+              Please check back later or explore other categories.
+            </p>
+
+          </div>
+
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {movies.map((movie) => (
+              <Link key={movie.id} href={`/movies/${movie.id}`} passHref>
+                <div
+                  className="relative w-full h-[380px] bg-cover bg-center rounded-lg shadow-lg overflow-hidden
+                             group transition-transform transform hover:scale-105 hover:shadow-xl flex flex-col justify-end cursor-pointer"
+                  style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg p-4 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <h4 className="text-xl font-bold text-white mb-2">{movie.title}</h4>
+                    <p className="text-sm text-gray-300 mb-2">{movie.overview.slice(0, 120)}...</p>
+                    <span className="mt-2 text-yellow-400 font-semibold text-lg">
+                      ⭐ {movie.vote_average.toFixed(1)}
+                    </span>
+                    <p className="mt-2 text-gray-300 text-sm font-medium">🎭 {movie.genres || "Unknown"}</p>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <Footer />

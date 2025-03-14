@@ -120,8 +120,32 @@ export default function MoviesPage() {
               ))}
             </div>
           ) : (
-            <p className="text-center text-xl text-gray-400 mt-8">🚫 No movies available for the selected filters. Please try different criteria.</p>
-          )}
+              <div className="flex flex-col items-center justify-center mt-16">
+                <img
+                  src="/no-movies-found.png"
+                  alt="No Movies Found"
+                  className="w-48 h-48 opacity-70"
+                />
+                <p className="text-center text-2xl text-gray-400 mt-6">
+                  Oops! No movies found for your selection.
+                </p>
+                <p className="text-gray-500 text-lg mt-2">
+                  Try changing the filters or browse all available movies.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedGenre("");
+                    setSelectedLanguage("");
+                  }}
+                  className="mt-6 px-8 py-3 rounded-md text-lg font-semibold text-white
+                             bg-gradient-to-r from-red-600 to-red-800 shadow-md transition-all duration-300
+                             hover:from-red-700 hover:to-red-900 hover:shadow-lg transform hover:scale-105"
+                >
+                  Reset Filters
+                </button>
+
+              </div>
+            )}
         </section>
       </main>
 

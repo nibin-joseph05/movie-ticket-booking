@@ -29,19 +29,36 @@ export default function MovieDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white text-lg">
-        Loading movie details...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+        <div className="w-12 h-12 border-4 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+        <p className="mt-4 text-lg">Fetching movie details...</p>
       </div>
     );
   }
 
+
   if (!movie) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-500 text-lg">
-        Movie not found! 🚫
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+        <h1 className="text-4xl font-extrabold text-red-500 mt-4 animate-bounce">
+          Oops! Movie Not Found
+        </h1>
+        <p className="text-lg text-gray-400 mt-2 text-center max-w-md">
+          We couldn't find the movie you're looking for. <br />
+          Please try searching again or explore other movies.
+        </p>
+        <a
+          href="/movies"
+          className="mt-5 px-8 py-3 bg-gradient-to-r from-red-600 to-red-800 text-white rounded-lg text-lg font-semibold
+                    hover:from-red-700 hover:to-red-900 transition-all duration-300 shadow-lg transform hover:scale-105"
+        >
+          Back to Home
+        </a>
       </div>
     );
   }
+
+
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-white">
@@ -65,7 +82,7 @@ export default function MovieDetailPage() {
           <div className="flex flex-col md:flex-row items-center max-w-5xl w-full p-6 gap-6">
             {/* Left: Trailer */}
             {movie.trailer && (
-              <div className="w-full md:w-1/3 flex justify-center">
+              <div className="w-full md:w-2/3 flex justify-center">
                 <iframe
                   className="w-[320px] h-[200px] md:w-[450px] md:h-[250px] rounded-lg shadow-lg"
                   src={`https://www.youtube.com/embed/${movie.trailer}`}
