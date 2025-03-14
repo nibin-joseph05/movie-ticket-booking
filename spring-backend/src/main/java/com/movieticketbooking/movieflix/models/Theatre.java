@@ -1,9 +1,8 @@
 package com.movieticketbooking.movieflix.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.*;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "theatres")
@@ -11,118 +10,46 @@ public class Theatre {
 
     public Theatre() {}
 
-    public Theatre(String id, String name, double latitude, double longitude, Double rating, String address, String phoneNumber, String openingHours, Double distance) {
+    public Theatre(String id, String name, double latitude, double longitude) {
         this.id = id;
         this.name = name;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.rating = rating;
-        this.address = address;
-        this.phoneNumber = phoneNumber;
-        this.openingHours = openingHours;
-        this.distance = distance;
     }
-
 
     @Id
-    @NotBlank(message = "Theatre ID cannot be blank")
+    @NotBlank(message = "Theatre ID (Google Places ID) is required")
     private String id;
 
-    @NotBlank(message = "Theatre name cannot be blank")
+    @NotBlank(message = "Theatre name is required")
     private String name;
 
-    @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
-    @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
+    @NotNull(message = "Latitude is required")
     private double latitude;
 
-    @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
-    @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
+    @NotNull(message = "Longitude is required")
     private double longitude;
 
-    @Min(value = 0, message = "Rating must be at least 0")
-    @Max(value = 5, message = "Rating must not exceed 5")
-    private Double rating;
-
-    @NotBlank(message = "Address cannot be blank")
-    private String address;
-
-    @Pattern(regexp = "\\d{10}", message = "Phone number must be 10 digits")
-    private String phoneNumber;
-
-    private String openingHours;
-
-    private double distance;
-
     // Getters and Setters
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public double getLatitude() { return latitude; }
+    public void setLatitude(double latitude) { this.latitude = latitude; }
 
-    public double getDistance() {
-        return distance;
-    }
+    public double getLongitude() { return longitude; }
+    public void setLongitude(double longitude) { this.longitude = longitude; }
 
-    public void setDistance(double distance) {
-        this.distance = distance;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
-
-    public Double getRating() {
-        return rating;
-    }
-
-    public void setRating(Double rating) {
-        this.rating = rating;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getOpeningHours() {
-        return openingHours;
-    }
-
-    public void setOpeningHours(String openingHours) {
-        this.openingHours = openingHours;
+    @Override
+    public String toString() {
+        return "Theatre{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                '}';
     }
 }
