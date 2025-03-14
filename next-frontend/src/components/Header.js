@@ -39,7 +39,7 @@ export default function Header() {
         try {
           const response = await fetch(`http://localhost:8080/movies/search?name=${query}`);
           const data = await response.json();
-          setSearchResults(data.length ? data : []); // Handle empty results
+          setSearchResults(data.length ? data.slice(0, 5) : []);
         } catch (error) {
           console.error("Error fetching search results", error);
         } finally {
@@ -48,7 +48,7 @@ export default function Header() {
       } else {
         setSearchResults([]);
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     const handleSearch = (e) => {
       const query = e.target.value;

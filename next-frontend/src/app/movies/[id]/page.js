@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import axios from "axios";
+import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -100,23 +101,31 @@ export default function MovieDetailPage() {
                 ⭐ {movie.vote_average?.toFixed(1)} / 10 ({movie.vote_count?.toLocaleString()} Votes)
               </p>
               <p className="text-gray-400 text-lg mt-1">In Cinemas</p>
-              <div className="flex justify-center md:justify-start gap-3 mt-2 text-lg">
-                <span className="bg-gray-800 px-4 py-1 rounded">{movie.format || "2D"}</span>
-                <span className="bg-gray-800 px-4 py-1 rounded">{movie.language?.toUpperCase() || "N/A"}</span>
-                <span className="bg-gray-800 px-4 py-1 rounded">{movie.runtime || "1h 59m"}</span>
+              <div className="flex justify-center md:justify-start gap-3 mt-2 text-base">
+                <span className="bg-gradient-to-r from-gray-700 to-gray-900 text-white px-4 py-1.5 rounded-full shadow-md">
+                  🎬 {movie.format || "2D"}
+                </span>
+                <span className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-4 py-1.5 rounded-full shadow-md">
+                  🌍 {movie.language?.toUpperCase() || "N/A"}
+                </span>
+                <span className="bg-gradient-to-r from-green-600 to-green-800 text-white px-4 py-1.5 rounded-full shadow-md">
+                  ⏳ {movie.runtime ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m` : "N/A"}
+                </span>
               </div>
+
               <p className="mt-3 text-lg text-gray-400">{movie.genre?.join(", ") || "Drama, Family"}</p>
               <p className="mt-1 text-lg text-gray-400">UA13+ • {movie.release_date || "7 Mar, 2025"}</p>
               {movie.isNowPlaying ? (
-                <button className="mt-5 bg-red-600 px-8 py-3 text-white rounded-md text-lg">
-                  Book Tickets
-                </button>
+                <Link href={`/theatre?movieId=${id}`}>
+                  <button className="mt-5 bg-gradient-to-r from-red-600 to-red-800 px-8 py-3 text-white font-semibold rounded-full text-lg shadow-lg transition-all duration-300 hover:from-red-700 hover:to-red-900 hover:shadow-xl transform hover:scale-105">
+                    🎟️ Book Tickets
+                  </button>
+                </Link>
               ) : (
                 <p className="mt-5 text-lg text-red-500 font-semibold">
                   ❌ This movie is not currently showing in theaters.
                 </p>
               )}
-
             </div>
           </div>
         </div>
