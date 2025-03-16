@@ -106,12 +106,27 @@ public class MovieController {
             return ResponseEntity.notFound().build();
         }
 
+        // Extracting essential details
+        String posterPath = (String) movieDetails.get("poster_path");
+        String releaseDate = (String) movieDetails.get("release_date");
+
+        // Extracting genres as a list of names
+        List<Map<String, Object>> genresList = (List<Map<String, Object>>) movieDetails.get("genres");
+        List<String> genreNames = genresList.stream()
+                .map(g -> (String) g.get("name"))
+                .collect(Collectors.toList());
+
         // Check if the movie is currently playing
         List<Map<String, Object>> nowPlayingMovies = (List<Map<String, Object>>) nowPlayingResponse.get("results");
         boolean isNowPlaying = nowPlayingMovies.stream()
                 .anyMatch(movie -> String.valueOf(movie.get("id")).equals(id));
 
         movieDetails.put("isNowPlaying", isNowPlaying);
+        movieDetails.put("posterPath", posterPath != null ? "https://image.tmdb.org/t/p/w500" + posterPath : null);
+        movieDetails.put("releaseDate", releaseDate);
+        movieDetails.put("genres", genreNames);
+        movieDetails.put("rating", movieDetails.get("vote_average") != null ? movieDetails.get("vote_average") : "N/A");
+
 
         // Fetch Cast
         List<Map<String, Object>> castList = (List<Map<String, Object>>) creditsResponse.get("cast");
@@ -144,8 +159,6 @@ public class MovieController {
                 .map(video -> (String) video.get("key"))
                 .findFirst();
 
-        // Add to Response
-        movieDetails.put("language", movieDetails.get("original_language"));
         movieDetails.put("cast", limitedCast);
         movieDetails.put("crew", directors);
         trailerKey.ifPresent(trailer -> movieDetails.put("trailer", trailer));
