@@ -55,9 +55,10 @@ public class TheatreController {
             }
 
             for (JsonNode theatreJson : places) {
-                if (!theatreJson.has("displayName")) continue;
+                if (!theatreJson.has("displayName") || !theatreJson.has("id")) continue;
 
                 TheatreDTO theatre = new TheatreDTO();
+                theatre.setId(theatreJson.get("id").asText());
                 theatre.setName(theatreJson.get("displayName").get("text").asText());
                 theatre.setAddress(theatreJson.has("formattedAddress") ? theatreJson.get("formattedAddress").asText() : "Address not available");
                 theatre.setRating(theatreJson.has("rating") ? theatreJson.get("rating").asDouble() : 0.0);
@@ -94,6 +95,7 @@ public class TheatreController {
     }
 
     public static class TheatreDTO {
+        private String id;
         private String name;
         private String address;
         private double rating;
@@ -102,6 +104,8 @@ public class TheatreController {
         private double distance;
 
         // Getters and Setters
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
         public String getAddress() { return address; }
