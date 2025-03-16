@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FaCrosshairs } from "react-icons/fa";
 import { debounce } from "lodash";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -12,6 +13,7 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const user = localStorage.getItem("user");
@@ -134,7 +136,14 @@ export default function Header() {
         <div className="flex items-center space-x-4">
           <button
             onClick={() => router.push("/theatre")}
-            className="flex items-center bg-blue-600 border-2 border-white px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
+            disabled={pathname === "/theatre"}
+            className={`flex items-center px-4 py-2 rounded-full text-sm font-semibold shadow-md transition-all duration-300
+              bg-blue-600 border-2 border-white text-white
+              ${
+                pathname === "/theatre"
+                  ? "cursor-not-allowed opacity-60"  // Reducing opacity for disabled state
+                  : "hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
+              }`}
           >
             <FaCrosshairs className="mr-2 text-base" />
             Find Theaters

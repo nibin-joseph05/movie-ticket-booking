@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Link from "next/link";
 import { FaLocationArrow } from "react-icons/fa";
 
 export default function Theatre() {
@@ -90,11 +91,12 @@ export default function Theatre() {
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
       <Header />
+      <div className="border-t border-gray-700 shadow-lg"></div>
 
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Movie Section with Blurred Background */}
-        {movie && (
+        {movie ? (
           <div
             className="relative flex flex-col md:flex-row items-center bg-[#1e1e2e] p-6 rounded-lg shadow-2xl max-w-4xl mx-auto w-full overflow-hidden border border-gray-700"
             style={{
@@ -149,7 +151,25 @@ export default function Theatre() {
               </div>
             </div>
           </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+            <h2 className="text-4xl font-extrabold text-red-500 mt-4 animate-bounce">
+              🎬 Oops! No Movie Selected
+            </h2>
+            <p className="text-lg text-gray-400 mt-2 max-w-md">
+              To continue, please select a movie from our collection.
+            </p>
+            <Link href="/movies">
+              <button className="mt-6 bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 rounded-full
+                                 text-white font-semibold text-lg shadow-lg transition-all duration-300
+                                 ease-in-out hover:from-blue-700 hover:to-blue-600 hover:scale-105
+                                 hover:shadow-blue-500/50 active:scale-95">
+                🎥 Browse Movies
+              </button>
+            </Link>
+          </div>
         )}
+
 
         {/* White Separator Line */}
         <div className="border-t border-gray-400 my-6"></div>
@@ -198,9 +218,24 @@ export default function Theatre() {
 
                   {/* View Showtimes Button */}
                   <div className="mt-auto flex justify-center">
-                    <button className="bg-red-600 px-4 py-2.5 w-40 rounded-md text-white font-medium text-sm whitespace-nowrap hover:bg-red-700 transition shadow-md">
-                      🎟️ View Showtimes
-                    </button>
+                    {movieId ? (
+                      <Link href={`/showtimes?theatreId=${theatre.id}&movieId=${movieId}`}>
+                        <button className="bg-red-600 px-4 py-2.5 w-40 rounded-md text-white font-medium text-sm whitespace-nowrap hover:bg-red-700 transition shadow-md">
+                          🎟️ View Showtimes
+                        </button>
+                      </Link>
+                    ) : (
+                      <button
+                        disabled={!movieId}
+                        className="bg-gradient-to-r from-gray-700 to-gray-600 px-5 py-3 w-52 rounded-md text-gray-300
+                                   font-semibold text-sm whitespace-nowrap cursor-not-allowed opacity-70 border-2
+                                   border-gray-500 shadow-md flex items-center justify-center gap-2"
+                      >
+                        ❌ No Movie Selected ❌
+                      </button>
+
+                    )}
+
                   </div>
                 </div>
               ))}
