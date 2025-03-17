@@ -57,9 +57,17 @@ public class TheatreController {
             for (JsonNode theatreJson : places) {
                 if (!theatreJson.has("displayName") || !theatreJson.has("id")) continue;
 
+                String name = theatreJson.get("displayName").get("text").asText();
+
+                // Filter out unwanted locations by checking the name
+                if (!name.toLowerCase().contains("cinema") && !name.toLowerCase().contains("theatre") &&
+                        !name.toLowerCase().contains("theater")) {
+                    continue; // Skip non-theater results
+                }
+
                 TheatreDTO theatre = new TheatreDTO();
                 theatre.setId(theatreJson.get("id").asText());
-                theatre.setName(theatreJson.get("displayName").get("text").asText());
+                theatre.setName(name);
                 theatre.setAddress(theatreJson.has("formattedAddress") ? theatreJson.get("formattedAddress").asText() : "Address not available");
                 theatre.setRating(theatreJson.has("rating") ? theatreJson.get("rating").asDouble() : 0.0);
 
@@ -82,6 +90,7 @@ public class TheatreController {
 
         return theatres;
     }
+
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371;
