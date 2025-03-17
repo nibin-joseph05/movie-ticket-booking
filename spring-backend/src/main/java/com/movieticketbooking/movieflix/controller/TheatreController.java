@@ -42,6 +42,57 @@ public class TheatreController {
         return ResponseEntity.ok(theatres);
     }
 
+
+    @GetMapping("/details")
+    public ResponseEntity<TheatreDTO> getTheatreDetails(@RequestParam String theatreId) {
+        String url = "https://places.googleapis.com/v1/places/" + theatreId + "?key=" + googlePlacesApiKey;
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Goog-FieldMask", "displayName,formattedAddress,rating,location,internationalPhoneNumber,currentOpeningHours");
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+
+        return ResponseEntity.ok(parseTheatreDetails(response.getBody()));
+    }
+
+    private TheatreDTO parseTheatreDetails(String response) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        TheatreDTO theatre = new TheatreDTO();
+
+        try {
+            JsonNode jsonResponse = objectMapper.readTree(response);
+
+            if (jsonResponse.has("displayName")) {
+                theatre.setName(jsonResponse.get("displayName").get("text").asText());
+            }
+
+            if (jsonResponse.has("formattedAddress")) {
+                theatre.setAddress(jsonResponse.get("formattedAddress").asText());
+            }
+
+            if (jsonResponse.has("rating")) {
+                theatre.setRating(jsonResponse.get("rating").asDouble());
+            }
+
+            if (jsonResponse.has("location")) {
+                JsonNode location = jsonResponse.get("location");
+                theatre.setLatitude(location.get("latitude").asDouble());
+                theatre.setLongitude(location.get("longitude").asDouble());
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return theatre;
+    }
+
+
+
     private List<TheatreDTO> parseTheatreData(String response, double userLat, double userLon) {
         List<TheatreDTO> theatres = new ArrayList<>();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -59,10 +110,9 @@ public class TheatreController {
 
                 String name = theatreJson.get("displayName").get("text").asText();
 
-                // Filter out unwanted locations by checking the name
                 if (!name.toLowerCase().contains("cinema") && !name.toLowerCase().contains("theatre") &&
                         !name.toLowerCase().contains("theater")) {
-                    continue; // Skip non-theater results
+                    continue;
                 }
 
                 TheatreDTO theatre = new TheatreDTO();
@@ -102,6 +152,7 @@ public class TheatreController {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c; // Distance in km
     }
+
 
     public static class TheatreDTO {
         private String id;
