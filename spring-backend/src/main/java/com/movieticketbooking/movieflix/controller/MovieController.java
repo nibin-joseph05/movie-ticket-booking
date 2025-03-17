@@ -126,6 +126,7 @@ public class MovieController {
         movieDetails.put("releaseDate", releaseDate);
         movieDetails.put("genres", genreNames);
         movieDetails.put("rating", movieDetails.get("vote_average") != null ? movieDetails.get("vote_average") : "N/A");
+        movieDetails.put("synopsis", movieDetails.get("overview"));
 
 
         // Fetch Cast

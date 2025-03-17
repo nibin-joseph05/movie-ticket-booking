@@ -1,25 +1,40 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import TheatreInfoPopup from "@/components/theatre-map";
+import MovieInfo from "@/components/MovieInfo";
 
 export default function Showtimes() {
   const searchParams = useSearchParams();
   const movieId = searchParams.get("movieId");
   const theatreId = searchParams.get("theatreId");
 
+  const [movieDetails, setMovieDetails] = useState(null);
   const [theatreDetails, setTheatreDetails] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
 
   useEffect(() => {
     if (theatreId) fetchTheatreDetails();
     if (movieId && theatreId) fetchShowtimes();
+    if (movieId) fetchMovieDetails();
   }, [movieId, theatreId, selectedDate]);
+
+  const fetchMovieDetails = async () => {
+    try {
+      const res = await fetch(`http://localhost:8080/movies/details?id=${movieId}`);
+      const data = await res.json();
+      setMovieDetails(data);
+    } catch (error) {
+      console.error("Error fetching movie details:", error);
+    }
+  };
 
   const fetchTheatreDetails = async () => {
     try {
@@ -65,23 +80,42 @@ export default function Showtimes() {
       <div className="border-t border-gray-700 shadow-lg"></div>
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {theatreDetails && (
-          <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold text-red-500">{theatreDetails.name}</h2>
-            <p className="text-gray-400">{theatreDetails.address}</p>
-            <p className="text-yellow-400">⭐ {theatreDetails.rating || "N/A"}</p>
-            {/* 🎯 Add Info Button for Google Maps Popup */}
-            <div className="mt-4 flex justify-center">
-              <TheatreInfoPopup theater={theatreDetails} />
+        {(theatreDetails || movieDetails) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6"
+          >
+            <h2 className="text-4xl font-bold text-red-500 drop-shadow-md">{theatreDetails?.name}</h2>
+            <p className="text-gray-400 mt-2">{theatreDetails?.address}</p>
+            <p className="text-yellow-400 text-lg">⭐ {theatreDetails?.rating || "N/A"}</p>
+
+            <div className="mt-4 flex flex-col sm:flex-row justify-center items-center space-x-4">
+              {theatreDetails && <TheatreInfoPopup theater={theatreDetails} />}
+              {movieDetails && (
+                <button
+                  onClick={() => setIsMoviePopupOpen(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                >
+                  🎬 Movie Info
+                </button>
+              )}
             </div>
-          </div>
+          </motion.div>
+        )}
+
+        {/* Movie Info Popup */}
+        {isMoviePopupOpen && movieDetails && (
+          <MovieInfo movieDetails={movieDetails} onClose={() => setIsMoviePopupOpen(false)} />
         )}
 
         <div className="flex justify-center space-x-2 my-4">
           {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
-            <button
+            <motion.button
+              whileHover={{ scale: isEnabled ? 1.1 : 1 }}
+              whileTap={{ scale: 0.9 }}
               key={date}
-              className={`flex flex-col items-center px-4 py-2 rounded-md font-semibold w-20 transition ${
+              className={`flex flex-col items-center px-4 py-2 rounded-md font-semibold w-20 transition-shadow shadow-lg $ {
                 selectedDate === date ? "bg-red-600 text-white" : "bg-gray-700 text-gray-300"
               } ${!isEnabled ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500"}`}
               onClick={() => isEnabled && setSelectedDate(date)}
@@ -90,31 +124,43 @@ export default function Showtimes() {
               <span className="text-sm">{day}</span>
               <span className="text-xl font-bold">{number}</span>
               <span className="text-sm">{month}</span>
-            </button>
+            </motion.button>
           ))}
         </div>
 
         <h2 className="text-3xl font-semibold text-center text-white my-6">🎟 Available Showtimes</h2>
 
         {loading ? (
-          <p className="text-center text-gray-400 text-lg">Loading showtimes...</p>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
+            Loading showtimes...
+          </motion.p>
         ) : showtimes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {showtimes.map((show, index) => (
-              <div key={index} className="bg-gray-800 p-4 rounded-lg shadow-md text-center">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                key={index}
+                className="bg-gray-800 p-4 rounded-lg shadow-md text-center transition-transform"
+              >
                 <h3 className="text-lg font-semibold">{show.time}</h3>
                 <p className="text-gray-400">Seats Available: {show.availableSeats}</p>
                 <p className="text-gray-400">Price: ₹{show.price}</p>
                 <Link href={`/booking?theatreId=${theatreId}&movieId=${movieId}&time=${encodeURIComponent(show.time)}`}>
-                  <button className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
+                  >
                     Book Now
-                  </button>
+                  </motion.button>
                 </Link>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <p className="text-center text-gray-400 text-lg">No showtimes available.</p>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
+            No showtimes available.
+          </motion.p>
         )}
       </main>
 
