@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+
 import Link from "next/link";
 import TheatreInfoPopup from "@/components/theatre-map";
 import MovieInfo from "@/components/MovieInfo";
@@ -19,6 +20,7 @@ export default function Showtimes() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     if (theatreId) fetchTheatreDetails();
@@ -49,9 +51,9 @@ export default function Showtimes() {
   const fetchShowtimes = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
+      const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}&category=gold`); // Default to Gold
       const data = await res.json();
-      setShowtimes(data);
+      setShowtimes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching showtimes:", error);
       setShowtimes([]);
@@ -59,6 +61,7 @@ export default function Showtimes() {
       setLoading(false);
     }
   };
+
 
   const getNextSevenDays = () => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -73,6 +76,14 @@ export default function Showtimes() {
       };
     });
   };
+
+  const handleBack = () => {
+    const confirmNavigation = window.confirm("Are you sure you want to go back?");
+    if (confirmNavigation) {
+      window.history.back();
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
@@ -100,6 +111,16 @@ export default function Showtimes() {
                   🎬 Movie Info
                 </button>
               )}
+              <button
+                onClick={handleBack}
+                className="flex items-center space-x-2 bg-gray-700 text-white px-5 py-1.5 rounded-lg shadow-md
+                           border border-white hover:bg-gray-800 transition-transform transform hover:scale-105
+                           focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                <span className="text-lg">🔙</span>
+                <span className="font-medium">Back</span>
+              </button>
+
             </div>
           </motion.div>
         )}
@@ -108,6 +129,7 @@ export default function Showtimes() {
         {isMoviePopupOpen && movieDetails && (
           <MovieInfo movieDetails={movieDetails} onClose={() => setIsMoviePopupOpen(false)} />
         )}
+
 
         <div className="flex justify-center space-x-2 my-4">
           {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
@@ -128,40 +150,74 @@ export default function Showtimes() {
           ))}
         </div>
 
-        <h2 className="text-3xl font-semibold text-center text-white my-6">🎟 Available Showtimes</h2>
+        <h2 className="text-4xl font-bold text-center text-white my-8 drop-shadow-lg">
+          🎟 Available Showtimes
+        </h2>
 
         {loading ? (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
             Loading showtimes...
           </motion.p>
         ) : showtimes.length > 0 ? (
-          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {showtimes.map((show, index) => (
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                key={index}
-                className="bg-gray-800 p-4 rounded-lg shadow-md text-center transition-transform"
-              >
-                <h3 className="text-lg font-semibold">{show.time}</h3>
-                <p className="text-gray-400">Seats Available: {show.availableSeats}</p>
-                <p className="text-gray-400">Price: ₹{show.price}</p>
-                <Link href={`/booking?theatreId=${theatreId}&movieId=${movieId}&time=${encodeURIComponent(show.time)}`}>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
-                  >
-                    Book Now
-                  </motion.button>
-                </Link>
-              </motion.div>
-            ))}
+          <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8">
+            {showtimes.map((show, index) => {
+              const totalSeats = show.totalSeats || 100; // Default 100 seats
+              const bookedSeats = totalSeats - (show.availableSeats || 0);
+              const seatFillPercentage = (bookedSeats / totalSeats) * 100;
+
+              // Determine Seat Availability Color
+              let seatColor = "text-green-400"; // Default (Plenty seats)
+              if (seatFillPercentage > 80) seatColor = "text-red-500"; // Almost full (80%+ booked)
+              else if (seatFillPercentage > 40) seatColor = "text-yellow-400"; // Filling fast (40%+ booked)
+
+              return (
+                <motion.div
+                  whileHover={{ scale: 1.05, boxShadow: "0px 4px 15px rgba(255, 0, 0, 0.4)" }}
+                  whileTap={{ scale: 0.97 }}
+                  key={index}
+                  className="relative backdrop-blur-md bg-gray-900/60 p-6 rounded-xl shadow-lg border border-gray-800 hover:border-red-500
+                             transition-all text-center flex flex-col justify-between items-center"
+                >
+                  {/* Showtime Header */}
+                  <div className="flex justify-between items-center w-full mb-4">
+                    <span className="text-xl font-bold text-white">{show.time}</span>
+                    <span className="bg-red-600 text-white px-3 py-1 text-xs rounded-full shadow-sm">
+                      {show.category || "Gold"}
+                    </span>
+                  </div>
+
+                  {/* Seat Availability & Price */}
+                  <div className="flex flex-col items-center gap-2">
+                    <p className={`text-sm flex items-center gap-2 ${seatColor}`}>
+                      🎟 <span className="font-medium">{show.availableSeats || "N/A"} Seats Available</span>
+                    </p>
+                    <p className="text-gray-300 text-sm flex items-center gap-2">
+                      💰 <span className="text-green-400 font-semibold">₹{show.price || "N/A"}</span>
+                    </p>
+                  </div>
+
+                  {/* Book Now Button */}
+                  <Link href={`/booking?theatreId=${theatreId}&movieId=${movieId}&time=${encodeURIComponent(show.time)}&price=${show.price}`}>
+                    <motion.button
+                      whileHover={{ scale: 1.1, backgroundColor: "#ff1744", boxShadow: "0px 3px 10px rgba(255, 23, 68, 0.6)" }}
+                      whileTap={{ scale: 0.95 }}
+                      className="mt-4 w-full bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-md shadow-md
+                                 hover:bg-red-700 transition-all focus:ring-2 focus:ring-red-500"
+                    >
+                      Book Now
+                    </motion.button>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </motion.div>
         ) : (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
             No showtimes available.
           </motion.p>
         )}
+
+
       </main>
 
       <Footer />
