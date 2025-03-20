@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import TheatreInfoPopup from "@/components/theatre-map";
 import MovieInfo from "@/components/MovieInfo";
+import SeatCategoryPopup from "@/components/SeatCategoryPopup";
 
 export default function Showtimes() {
   const searchParams = useSearchParams();
@@ -19,14 +20,23 @@ export default function Showtimes() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
+//  const [showPopup, setShowPopup] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("gold");
+  const [isSeatPopupOpen, setIsSeatPopupOpen] = useState(false);
+  const [bookingData, setBookingData] = useState(null);
+  const [activeShowtime, setActiveShowtime] = useState(null);
 
   useEffect(() => {
     if (theatreId) fetchTheatreDetails();
     if (movieId && theatreId) fetchShowtimes();
     if (movieId) fetchMovieDetails();
   }, [movieId, theatreId, selectedDate]);
+
+  useEffect(() => {
+      if (bookingData && activeShowtime) {
+        window.location.href = `/booking?theatreId=${theatreId}&movieId=${movieId}&time=${activeShowtime}&category=${bookingData.category}&seats=${bookingData.seats}&price=${bookingData.category === "gold" ? bookingData.goldPrice : bookingData.platinumPrice}`;
+      }
+    }, [bookingData, activeShowtime]);
 
   const fetchMovieDetails = async () => {
     try {
@@ -85,6 +95,10 @@ export default function Showtimes() {
     }
   };
 
+  const handleSeatSelection = (seats, category) => {
+    setBookingData({ seats, category });
+    setIsSeatPopupOpen(false);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
@@ -209,25 +223,17 @@ export default function Showtimes() {
                   </div>
 
                   {/* Book Now Button */}
-                  <Link href={{
-                    pathname: "/booking",
-                    query: {
-                      theatreId,
-                      movieId,
-                      time: show.time,
-                      category: selectedCategory,
-                      price: selectedCategory === "gold" ? show.goldPrice : show.platinumPrice
-                    }
-                  }}>
-                    <motion.button
-                      whileHover={{ scale: 1.1, backgroundColor: "#ff1744", boxShadow: "0px 3px 10px rgba(255, 23, 68, 0.6)" }}
-                      whileTap={{ scale: 0.95 }}
-                      className="mt-4 w-full bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-md shadow-md
-                                 hover:bg-red-700 transition-all focus:ring-2 focus:ring-red-500"
-                    >
-                      Book Now
-                    </motion.button>
-                  </Link>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-4 w-full bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-md shadow-md hover:bg-red-700 transition-all"
+                    onClick={() => {
+                      setActiveShowtime(show); // Store the entire show object instead of just time
+                      setIsSeatPopupOpen(true);
+                    }}
+                  >
+                    Book Now
+                  </motion.button>
                 </motion.div>
               );
             })}
@@ -239,6 +245,15 @@ export default function Showtimes() {
           </motion.p>
         )}
 
+        {isSeatPopupOpen && activeShowtime && (
+          <SeatCategoryPopup
+            onClose={() => setIsSeatPopupOpen(false)}
+            onSelect={handleSeatSelection}
+            selectedCategory={selectedCategory}
+            showtime={activeShowtime.time}
+            price={selectedCategory === "gold" ? activeShowtime.goldPrice : activeShowtime.platinumPrice} // Get correct price
+          />
+        )}
 
       </main>
 
