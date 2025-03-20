@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-
 import Link from "next/link";
 import TheatreInfoPopup from "@/components/theatre-map";
 import MovieInfo from "@/components/MovieInfo";
@@ -21,6 +20,7 @@ export default function Showtimes() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("gold");
 
   useEffect(() => {
     if (theatreId) fetchTheatreDetails();
@@ -51,7 +51,7 @@ export default function Showtimes() {
   const fetchShowtimes = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}&category=gold`); // Default to Gold
+      const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
       const data = await res.json();
       setShowtimes(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -61,6 +61,7 @@ export default function Showtimes() {
       setLoading(false);
     }
   };
+
 
 
   const getNextSevenDays = () => {
@@ -161,43 +162,63 @@ export default function Showtimes() {
         ) : showtimes.length > 0 ? (
           <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8">
             {showtimes.map((show, index) => {
-              const totalSeats = show.totalSeats || 100; // Default 100 seats
+              const totalSeats = show.totalSeats || 100;
               const bookedSeats = totalSeats - (show.availableSeats || 0);
               const seatFillPercentage = (bookedSeats / totalSeats) * 100;
 
-              // Determine Seat Availability Color
               let seatColor = "text-green-400"; // Default (Plenty seats)
-              if (seatFillPercentage > 80) seatColor = "text-red-500"; // Almost full (80%+ booked)
-              else if (seatFillPercentage > 40) seatColor = "text-yellow-400"; // Filling fast (40%+ booked)
+              if (seatFillPercentage > 80) seatColor = "text-red-500"; // Almost full
+              else if (seatFillPercentage > 40) seatColor = "text-yellow-400"; // Filling fast
 
               return (
                 <motion.div
+                  key={index}
                   whileHover={{ scale: 1.05, boxShadow: "0px 4px 15px rgba(255, 0, 0, 0.4)" }}
                   whileTap={{ scale: 0.97 }}
-                  key={index}
                   className="relative backdrop-blur-md bg-gray-900/60 p-6 rounded-xl shadow-lg border border-gray-800 hover:border-red-500
                              transition-all text-center flex flex-col justify-between items-center"
                 >
                   {/* Showtime Header */}
                   <div className="flex justify-between items-center w-full mb-4">
                     <span className="text-xl font-bold text-white">{show.time}</span>
-                    <span className="bg-red-600 text-white px-3 py-1 text-xs rounded-full shadow-sm">
-                      {show.category || "Gold"}
-                    </span>
+                  </div>
+
+                  {/* Category Selection */}
+                  <div className="mt-3 flex justify-center space-x-3">
+                    {["gold", "platinum"].map((cat) => (
+                      <button
+                        key={cat}
+                        className={`px-3 py-1 rounded-lg text-sm font-semibold ${
+                          selectedCategory === cat ? "bg-red-600 text-white" : "bg-gray-700 text-gray-300"
+                        }`}
+                        onClick={() => setSelectedCategory(cat)}
+                      >
+                        {cat.toUpperCase()}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Seat Availability & Price */}
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-2 mt-2">
                     <p className={`text-sm flex items-center gap-2 ${seatColor}`}>
                       🎟 <span className="font-medium">{show.availableSeats || "N/A"} Seats Available</span>
                     </p>
                     <p className="text-gray-300 text-sm flex items-center gap-2">
-                      💰 <span className="text-green-400 font-semibold">₹{show.price || "N/A"}</span>
+                      💰 <span className="text-green-400 font-semibold">₹{selectedCategory === "gold" ? show.goldPrice : show.platinumPrice}</span>
                     </p>
                   </div>
 
                   {/* Book Now Button */}
-                  <Link href={`/booking?theatreId=${theatreId}&movieId=${movieId}&time=${encodeURIComponent(show.time)}&price=${show.price}`}>
+                  <Link href={{
+                    pathname: "/booking",
+                    query: {
+                      theatreId,
+                      movieId,
+                      time: show.time,
+                      category: selectedCategory,
+                      price: selectedCategory === "gold" ? show.goldPrice : show.platinumPrice
+                    }
+                  }}>
                     <motion.button
                       whileHover={{ scale: 1.1, backgroundColor: "#ff1744", boxShadow: "0px 3px 10px rgba(255, 23, 68, 0.6)" }}
                       whileTap={{ scale: 0.95 }}
@@ -210,6 +231,7 @@ export default function Showtimes() {
                 </motion.div>
               );
             })}
+
           </motion.div>
         ) : (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">

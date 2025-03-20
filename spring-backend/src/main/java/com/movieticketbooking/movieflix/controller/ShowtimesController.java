@@ -20,24 +20,22 @@ public class ShowtimesController {
     public ResponseEntity<?> getShowtimes(
             @RequestParam String theatreId,
             @RequestParam String movieId,
-            @RequestParam(required = false) String date,
-            @RequestParam(required = false) String category  // Gold or Platinum
+            @RequestParam(required = false) String date
     ) {
         LocalDate today = LocalDate.now();
         LocalDate selectedDate = (date != null) ? LocalDate.parse(date) : today;
 
-        // Movie availability restriction (not available after 2 days)
+        // Restrict movie availability (only up to 3 days in advance)
         if (selectedDate.isAfter(today.plusDays(2))) {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Movie is not available for this day."));
         }
 
-        // Determine movie type (Assuming 3D movieId ends with "_3D")
+        // Determine if it's a 3D movie (Assuming movieId ending with "_3D" indicates 3D)
         boolean isThreeD = movieId.endsWith("_3D");
 
-        // Fixed pricing logic based on category
-        int basePrice = isThreeD ? 210 : 170;
-        int platinumPrice = 210;
-        int goldPrice = isThreeD ? 310 : 210;
+        // Pricing based on movie type
+        int baseGoldPrice = isThreeD ? 310 : 210;
+        int basePlatinumPrice = isThreeD ? 410 : 310;
 
         // Fixed seat count per theatre
         int totalSeats = theatreSeatMap.computeIfAbsent(theatreId, k -> new Random().nextInt(31) + 70); // 70-100 seats
@@ -47,8 +45,9 @@ public class ShowtimesController {
         for (String time : TIMES) {
             Map<String, Object> show = new HashMap<>();
             show.put("time", time);
-            show.put("availableSeats", totalSeats);  // Same for all showtimes
-            show.put("price", category != null && category.equalsIgnoreCase("gold") ? goldPrice : platinumPrice);
+            show.put("availableSeats", totalSeats);
+            show.put("goldPrice", baseGoldPrice);
+            show.put("platinumPrice", basePlatinumPrice);
             show.put("date", selectedDate.toString());
 
             showtimes.add(show);
@@ -57,31 +56,32 @@ public class ShowtimesController {
         return ResponseEntity.ok(showtimes);
     }
 
-    // Simulate seat booking
-    @PostMapping("/book")
-    public ResponseEntity<?> bookSeats(
-            @RequestParam String theatreId,
-            @RequestParam String movieId,
-            @RequestParam String time,
-            @RequestParam String date,
-            @RequestParam int seats
-    ) {
-        LocalDate selectedDate = LocalDate.parse(date);
-        LocalDate today = LocalDate.now();
 
-        if (selectedDate.isBefore(today) || selectedDate.isAfter(today.plusDays(2))) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Booking not allowed for this date."));
-        }
-
-        int totalSeats = theatreSeatMap.getOrDefault(theatreId, 70);
-        int availableSeats = totalSeats - seats;
-
-        if (availableSeats < 0) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Not enough seats available."));
-        }
-
-        theatreSeatMap.put(theatreId, availableSeats); // Update available seats
-
-        return ResponseEntity.ok(Collections.singletonMap("message", "Booking successful! Remaining seats: " + availableSeats));
-    }
+//    // Simulate seat booking
+//    @PostMapping("/book")
+//    public ResponseEntity<?> bookSeats(
+//            @RequestParam String theatreId,
+//            @RequestParam String movieId,
+//            @RequestParam String time,
+//            @RequestParam String date,
+//            @RequestParam int seats
+//    ) {
+//        LocalDate selectedDate = LocalDate.parse(date);
+//        LocalDate today = LocalDate.now();
+//
+//        if (selectedDate.isBefore(today) || selectedDate.isAfter(today.plusDays(2))) {
+//            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Booking not allowed for this date."));
+//        }
+//
+//        int totalSeats = theatreSeatMap.getOrDefault(theatreId, 70);
+//        int availableSeats = totalSeats - seats;
+//
+//        if (availableSeats < 0) {
+//            return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Not enough seats available."));
+//        }
+//
+//        theatreSeatMap.put(theatreId, availableSeats); // Update available seats
+//
+//        return ResponseEntity.ok(Collections.singletonMap("message", "Booking successful! Remaining seats: " + availableSeats));
+//    }
 }
