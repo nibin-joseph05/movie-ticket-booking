@@ -23,7 +23,7 @@ public class ShowtimeController {
             return ResponseEntity.badRequest().body(Collections.singletonMap("message", "Movie is not available for this day."));
         }
 
-        List<String> fixedShowtimes = Arrays.asList("10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "10:00 PM");
+        List<String> fixedShowtimes = Arrays.asList("7:00 AM", "10:00 AM", "1:00 PM", "4:00 PM", "7:00 PM", "10:00 PM");
 
         List<Map<String, Object>> showtimesResponse = new ArrayList<>();
         for (String time : fixedShowtimes) {

@@ -244,24 +244,23 @@ const handleCategorySelect = (category) => {
                         } hover:bg-red-500 text-white`}
                         onClick={() => handleCategorySelect(cat)}
                       >
-                        {cat.type.toUpperCase()} ({cat.seatsAvailable} Seats) - ₹{cat.price}
+                        {cat.type.toUpperCase()}
                       </button>
                     ))}
                   </div>
 
                   {/* Seat Availability & Price */}
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    {selectedCategory ? (
+                    {selectedCategory && selectedCategory.type ? (
                       <>
                         <p className="text-lg font-semibold">{selectedCategory.type} Category</p>
                         <p>Seats Available: {selectedCategory.seatsAvailable}</p>
                         <p>Price: ₹{selectedCategory.price}</p>
                       </>
                     ) : (
-                      <p className="text-gray-300">Please select a category to view details.</p>
+                      <p className="text-gray-300 italic">No category selected. Please choose one to proceed.</p>
                     )}
                   </div>
-
 
                   {/* Book Now Button */}
                   <motion.button
@@ -271,7 +270,8 @@ const handleCategorySelect = (category) => {
                     onClick={() => {
                       setActiveShowtime(show);
                       setIsSeatPopupOpen(true);
-                    }} disabled={!selectedCategory}
+                    }}
+                    disabled={!selectedCategory}
                   >
                     Book Now
                   </motion.button>
@@ -292,7 +292,7 @@ const handleCategorySelect = (category) => {
             onSelect={handleSeatSelection}
             selectedCategory={selectedCategory}
             showtime={activeShowtime.time}
-            price={selectedCategory === "gold" ? activeShowtime.goldPrice : activeShowtime.platinumPrice} // Get correct price
+            price={selectedCategory === "gold" ? activeShowtime.goldPrice : activeShowtime.platinumPrice}
           />
         )}
 
