@@ -14,6 +14,9 @@ export default function Showtimes() {
   const movieId = searchParams.get("movieId");
   const theatreId = searchParams.get("theatreId");
 
+  console.log("Movie ID:", movieId);
+  console.log("Theatre ID:", theatreId);
+
   const [movieDetails, setMovieDetails] = useState(null);
   const [theatreDetails, setTheatreDetails] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
@@ -64,10 +67,11 @@ export default function Showtimes() {
       movieId &&
       theatreId
     ) {
-      window.location.href = `/booking?theatreId=${theatreId}&movieId=${movieId}&time=${activeShowtime.time}&category=${bookingData.category}&seats=${bookingData.seats}&price=${bookingData.price}`;
+      console.log("Redirecting with:", { movieId, theatreId, activeShowtime, bookingData });
+
+      window.location.href = `/booking?movieId=${encodeURIComponent(movieId)}&theatreId=${encodeURIComponent(theatreId)}&showtime=${encodeURIComponent(activeShowtime.time)}&category=${encodeURIComponent(bookingData.category)}&seats=${encodeURIComponent(bookingData.seats)}&price=${encodeURIComponent(bookingData.price)}`;
     }
   }, [bookingData, activeShowtime, movieId, theatreId]);
-
 
 
 
@@ -80,6 +84,7 @@ export default function Showtimes() {
       console.error("Error fetching movie details:", error);
     }
   };
+
 
   const fetchTheatreDetails = async () => {
     try {
@@ -341,15 +346,16 @@ export default function Showtimes() {
           </motion.p>
         )}
 
-        {isSeatPopupOpen && activeShowtime && (
+        {isSeatPopupOpen && activeShowtime && movieId && theatreId && (
           <SeatCategoryPopup
             onClose={() => setIsSeatPopupOpen(false)}
             selectedCategory={selectedCategory?.type}
             showtime={activeShowtime.time}
             price={selectedCategory?.price ?? 0}
+            movie={movieId}
+            theater={theatreId}
           />
         )}
-
 
       </main>
 
