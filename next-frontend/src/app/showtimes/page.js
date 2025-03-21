@@ -20,17 +20,41 @@ export default function Showtimes() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
-//  const [showPopup, setShowPopup] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("gold");
   const [isSeatPopupOpen, setIsSeatPopupOpen] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [activeShowtime, setActiveShowtime] = useState(null);
+  const [seatPrices, setSeatPrices] = useState([]);
+
+
 
   useEffect(() => {
-    if (theatreId) fetchTheatreDetails();
-    if (movieId && theatreId) fetchShowtimes();
-    if (movieId) fetchMovieDetails();
+    if (theatreId) {
+      fetchTheatreDetails();
+    }
+    if (movieId && theatreId) {
+      fetchShowtimes();
+    }
+    if (movieId) {
+      fetchMovieDetails();
+    }
   }, [movieId, theatreId, selectedDate]);
+
+
+  useEffect(() => {
+    const fetchSeatPrices = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/showtimes/seat-prices");
+        if (!response.ok) throw new Error("Failed to fetch seat prices");
+        const data = await response.json();
+        setSeatPrices(data);
+      } catch (error) {
+        console.error("Error fetching seat prices:", error);
+      }
+    };
+
+    fetchSeatPrices();
+  }, []);
 
   useEffect(() => {
       if (bookingData && activeShowtime) {
@@ -63,7 +87,17 @@ export default function Showtimes() {
     try {
       const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
       const data = await res.json();
-      setShowtimes(Array.isArray(data) ? data : []);
+
+      console.log("Fetched Showtimes:", data);  // Debugging log
+
+      if (Array.isArray(data)) {
+        setShowtimes(data.map(show => ({
+          time: show.time,
+          seatCategories: show.seatCategories || [],  // Ensure categories are handled properly
+        })));
+      } else {
+        setShowtimes([]);
+      }
     } catch (error) {
       console.error("Error fetching showtimes:", error);
       setShowtimes([]);
@@ -71,7 +105,6 @@ export default function Showtimes() {
       setLoading(false);
     }
   };
-
 
 
   const getNextSevenDays = () => {
@@ -99,6 +132,11 @@ export default function Showtimes() {
     setBookingData({ seats, category });
     setIsSeatPopupOpen(false);
   };
+
+const handleCategorySelect = (category) => {
+  setSelectedCategory(category);
+};
+
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
@@ -144,7 +182,6 @@ export default function Showtimes() {
         {isMoviePopupOpen && movieDetails && (
           <MovieInfo movieDetails={movieDetails} onClose={() => setIsMoviePopupOpen(false)} />
         )}
-
 
         <div className="flex justify-center space-x-2 my-4">
           {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
@@ -199,28 +236,32 @@ export default function Showtimes() {
 
                   {/* Category Selection */}
                   <div className="mt-3 flex justify-center space-x-3">
-                    {["gold", "platinum"].map((cat) => (
+                    {show.seatCategories?.map((cat) => (
                       <button
-                        key={cat}
-                        className={`px-3 py-1 rounded-lg text-sm font-semibold ${
-                          selectedCategory === cat ? "bg-red-600 text-white" : "bg-gray-700 text-gray-300"
-                        }`}
-                        onClick={() => setSelectedCategory(cat)}
+                        key={cat.type}
+                        className={`px-3 py-1 rounded-md mx-2 ${
+                          selectedCategory?.type === cat.type ? "bg-red-500" : "bg-gray-700"
+                        } hover:bg-red-500 text-white`}
+                        onClick={() => handleCategorySelect(cat)}
                       >
-                        {cat.toUpperCase()}
+                        {cat.type.toUpperCase()} ({cat.seatsAvailable} Seats) - ₹{cat.price}
                       </button>
                     ))}
                   </div>
 
                   {/* Seat Availability & Price */}
                   <div className="flex flex-col items-center gap-2 mt-2">
-                    <p className={`text-sm flex items-center gap-2 ${seatColor}`}>
-                      🎟 <span className="font-medium">{show.availableSeats || "N/A"} Seats Available</span>
-                    </p>
-                    <p className="text-gray-300 text-sm flex items-center gap-2">
-                      💰 <span className="text-green-400 font-semibold">₹{selectedCategory === "gold" ? show.goldPrice : show.platinumPrice}</span>
-                    </p>
+                    {selectedCategory ? (
+                      <>
+                        <p className="text-lg font-semibold">{selectedCategory.type} Category</p>
+                        <p>Seats Available: {selectedCategory.seatsAvailable}</p>
+                        <p>Price: ₹{selectedCategory.price}</p>
+                      </>
+                    ) : (
+                      <p className="text-gray-300">Please select a category to view details.</p>
+                    )}
                   </div>
+
 
                   {/* Book Now Button */}
                   <motion.button
@@ -228,9 +269,9 @@ export default function Showtimes() {
                     whileTap={{ scale: 0.95 }}
                     className="mt-4 w-full bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-md shadow-md hover:bg-red-700 transition-all"
                     onClick={() => {
-                      setActiveShowtime(show); // Store the entire show object instead of just time
+                      setActiveShowtime(show);
                       setIsSeatPopupOpen(true);
-                    }}
+                    }} disabled={!selectedCategory}
                   >
                     Book Now
                   </motion.button>
@@ -260,4 +301,5 @@ export default function Showtimes() {
       <Footer />
     </div>
   );
+
 }
