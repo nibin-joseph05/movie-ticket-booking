@@ -57,10 +57,19 @@ export default function Showtimes() {
   }, []);
 
   useEffect(() => {
-      if (bookingData && activeShowtime) {
-        window.location.href = `/booking?theatreId=${theatreId}&movieId=${movieId}&time=${activeShowtime}&category=${bookingData.category}&seats=${bookingData.seats}&price=${bookingData.category === "gold" ? bookingData.goldPrice : bookingData.platinumPrice}`;
-      }
-    }, [bookingData, activeShowtime]);
+    if (
+      bookingData?.category &&
+      bookingData?.seats?.length > 0 &&
+      activeShowtime?.time &&
+      movieId &&
+      theatreId
+    ) {
+      window.location.href = `/booking?theatreId=${theatreId}&movieId=${movieId}&time=${activeShowtime.time}&category=${bookingData.category}&seats=${bookingData.seats}&price=${bookingData.price}`;
+    }
+  }, [bookingData, activeShowtime, movieId, theatreId]);
+
+
+
 
   const fetchMovieDetails = async () => {
     try {
@@ -93,7 +102,7 @@ export default function Showtimes() {
       if (Array.isArray(data)) {
         setShowtimes(data.map(show => ({
           time: show.time,
-          seatCategories: show.seatCategories || [],  // Ensure categories are handled properly
+          seatCategories: show.seatCategories || [],
         })));
       } else {
         setShowtimes([]);
@@ -128,10 +137,30 @@ export default function Showtimes() {
     }
   };
 
-  const handleSeatSelection = (seats, category) => {
-    setBookingData({ seats, category });
-    setIsSeatPopupOpen(false);
+  const handleSeatSelection = async (seats, category) => {
+    try {
+      const response = await fetch("http://localhost:8080/showtimes/book-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          theatreId,
+          movieId,
+          time: activeShowtime,
+          category,
+          seats,
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error("Booking failed");
+
+      const bookingResponse = await response.json();
+      window.location.href = `/booking-confirmation?bookingId=${bookingResponse.id}`;
+    } catch (error) {
+      console.error("Error processing booking:", error);
+    }
   };
+
 
 const handleCategorySelect = (category) => {
   setSelectedCategory(category);
@@ -312,16 +341,15 @@ const handleCategorySelect = (category) => {
           </motion.p>
         )}
 
-
         {isSeatPopupOpen && activeShowtime && (
           <SeatCategoryPopup
             onClose={() => setIsSeatPopupOpen(false)}
-            onSelect={handleSeatSelection}
-            selectedCategory={selectedCategory}
+            selectedCategory={selectedCategory?.type}
             showtime={activeShowtime.time}
-            price={selectedCategory === "gold" ? activeShowtime.goldPrice : activeShowtime.platinumPrice}
+            price={selectedCategory?.price ?? 0}
           />
         )}
+
 
       </main>
 
