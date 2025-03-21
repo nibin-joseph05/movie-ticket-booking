@@ -183,24 +183,40 @@ const handleCategorySelect = (category) => {
           <MovieInfo movieDetails={movieDetails} onClose={() => setIsMoviePopupOpen(false)} />
         )}
 
-        <div className="flex justify-center space-x-2 my-4">
-          {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
-            <motion.button
-              whileHover={{ scale: isEnabled ? 1.1 : 1 }}
-              whileTap={{ scale: 0.9 }}
-              key={date}
-              className={`flex flex-col items-center px-4 py-2 rounded-md font-semibold w-20 transition-shadow shadow-lg $ {
-                selectedDate === date ? "bg-red-600 text-white" : "bg-gray-700 text-gray-300"
-              } ${!isEnabled ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500"}`}
-              onClick={() => isEnabled && setSelectedDate(date)}
-              disabled={!isEnabled}
+        <div className="flex flex-col items-center">
+          {/* Date Selection Buttons */}
+          <div className="flex justify-center space-x-2 my-4">
+            {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
+              <motion.button
+                whileHover={{ scale: isEnabled ? 1.1 : 1 }}
+                whileTap={{ scale: 0.9 }}
+                key={date}
+                className={`flex flex-col items-center px-4 py-2 rounded-md font-semibold w-20 transition-shadow shadow-lg ${
+                  selectedDate === date ? "bg-red-600 text-white" : "bg-gray-700 text-gray-300"
+                } ${!isEnabled ? "opacity-50 cursor-not-allowed" : "hover:bg-red-500"}`}
+                onClick={() => isEnabled && setSelectedDate(date)}
+                disabled={!isEnabled}
+              >
+                <span className="text-sm">{day}</span>
+                <span className="text-xl font-bold">{number}</span>
+                <span className="text-sm">{month}</span>
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Selected Date Display */}
+          {selectedDate && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="mt-4 bg-gray-900 px-6 py-3 rounded-lg text-white font-semibold text-lg shadow-md border border-gray-700"
             >
-              <span className="text-sm">{day}</span>
-              <span className="text-xl font-bold">{number}</span>
-              <span className="text-sm">{month}</span>
-            </motion.button>
-          ))}
+              Selected Date: <span className="text-red-400">{selectedDate}</span>
+            </motion.div>
+          )}
         </div>
+
 
         <h2 className="text-4xl font-bold text-center text-white my-8 drop-shadow-lg">
           🎟 Available Showtimes
@@ -224,14 +240,14 @@ const handleCategorySelect = (category) => {
               return (
                 <motion.div
                   key={index}
-                  whileHover={{ scale: 1.05, boxShadow: "0px 4px 15px rgba(255, 0, 0, 0.4)" }}
+                  whileHover={{ scale: 1.05, boxShadow: "0px 8px 20px rgba(255, 0, 0, 0.5)" }}
                   whileTap={{ scale: 0.97 }}
-                  className="relative backdrop-blur-md bg-gray-900/60 p-6 rounded-xl shadow-lg border border-gray-800 hover:border-red-500
+                  className="relative backdrop-blur-lg bg-gray-900/70 p-6 rounded-2xl shadow-xl border border-gray-800 hover:border-red-500
                              transition-all text-center flex flex-col justify-between items-center"
                 >
                   {/* Showtime Header */}
-                  <div className="flex justify-between items-center w-full mb-4">
-                    <span className="text-xl font-bold text-white">{show.time}</span>
+                  <div className="flex justify-center items-center w-full mb-4">
+                    <span className="text-2xl font-bold text-white tracking-wide">{show.time}</span>
                   </div>
 
                   {/* Category Selection */}
@@ -239,9 +255,11 @@ const handleCategorySelect = (category) => {
                     {show.seatCategories?.map((cat) => (
                       <button
                         key={cat.type}
-                        className={`px-3 py-1 rounded-md mx-2 ${
-                          selectedCategory?.type === cat.type ? "bg-red-500" : "bg-gray-700"
-                        } hover:bg-red-500 text-white`}
+                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                          selectedCategory?.type === cat.type
+                            ? "bg-gradient-to-r from-red-500 to-red-700 shadow-md text-white"
+                            : "bg-gray-700 hover:bg-red-500 text-gray-200"
+                        }`}
                         onClick={() => handleCategorySelect(cat)}
                       >
                         {cat.type.toUpperCase()}
@@ -250,15 +268,21 @@ const handleCategorySelect = (category) => {
                   </div>
 
                   {/* Seat Availability & Price */}
-                  <div className="flex flex-col items-center gap-2 mt-2">
+                  <div className="flex flex-col items-center gap-3 mt-4">
                     {selectedCategory && selectedCategory.type ? (
                       <>
-                        <p className="text-lg font-semibold">{selectedCategory.type} Category</p>
-                        <p>Seats Available: {selectedCategory.seatsAvailable}</p>
-                        <p>Price: ₹{selectedCategory.price}</p>
+                        <p className="text-lg font-semibold text-white bg-gray-800 px-3 py-1 rounded-lg">
+                          {selectedCategory.type} Category
+                        </p>
+                        <p className="text-gray-300">
+                          Seats Available: <span className="font-semibold text-white">{selectedCategory.seatsAvailable}</span>
+                        </p>
+                        <p className="text-gray-300">
+                          Price: <span className="text-xl font-semibold text-green-400">₹{selectedCategory.price}</span>
+                        </p>
                       </>
                     ) : (
-                      <p className="text-gray-300 italic">No category selected. Please choose one to proceed.</p>
+                      <p className="text-gray-400 italic">No category selected. Please choose one to proceed.</p>
                     )}
                   </div>
 
@@ -266,25 +290,28 @@ const handleCategorySelect = (category) => {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="mt-4 w-full bg-red-600 text-white px-5 py-2 rounded-lg font-semibold text-md shadow-md hover:bg-red-700 transition-all"
+                    className={`mt-6 w-full bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-xl font-bold text-lg shadow-lg
+                                hover:from-red-700 hover:to-red-900 transition-all
+                                ${!selectedCategory?.type ? "opacity-50 cursor-not-allowed" : ""}`}
                     onClick={() => {
                       setActiveShowtime(show);
                       setIsSeatPopupOpen(true);
                     }}
-                    disabled={!selectedCategory}
+                    disabled={!selectedCategory?.type}  // Ensuring only a valid category enables the button
                   >
                     Book Now
                   </motion.button>
+
                 </motion.div>
               );
             })}
-
           </motion.div>
         ) : (
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
             No showtimes available.
           </motion.p>
         )}
+
 
         {isSeatPopupOpen && activeShowtime && (
           <SeatCategoryPopup
