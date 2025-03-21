@@ -52,4 +52,11 @@ public class ShowtimeController {
                 Map.of("type", "Platinum", "seatsAvailable", 10, "price", 210.0)
         );
     }
+
+    @PostMapping("/book-ticket")
+    public ResponseEntity<?> bookTicket() {
+        return ResponseEntity.ok(Map.of("message", "Booking service will be implemented later."));
+    }
+
+
 }
