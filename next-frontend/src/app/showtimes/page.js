@@ -20,7 +20,7 @@ export default function Showtimes() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("gold");
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [isSeatPopupOpen, setIsSeatPopupOpen] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [activeShowtime, setActiveShowtime] = useState(null);
@@ -162,9 +162,9 @@ export default function Showtimes() {
   };
 
 
-const handleCategorySelect = (category) => {
-  setSelectedCategory(category);
-};
+    const handleCategorySelect = (category) => {
+      setSelectedCategory(category);
+    };
 
 
   return (

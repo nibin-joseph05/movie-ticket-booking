@@ -50,11 +50,6 @@ export default function SeatCategoryPopup({ onClose, selectedCategory, showtime,
           🎟️ Confirm Your Selection
         </motion.h2>
 
-        {/* Category & Showtime */}
-        <motion.p className="text-sm text-gray-400 mt-4">
-          🎭 Selecting {selectedSeats} {selectedSeats === 1 ? "seat" : "seats"} for {selectedCategory?.type ?? "UNKNOWN"} category.
-        </motion.p>
-
         <motion.p className="text-lg font-semibold text-blue-400 mt-1">
           📅 Showtime: {showtime}
         </motion.p>
