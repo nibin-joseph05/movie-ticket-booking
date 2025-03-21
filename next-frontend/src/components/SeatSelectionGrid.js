@@ -1,92 +1,96 @@
-"use client";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
 
-export default function SeatSelectionGrid({ selectedSeats, setSelectedSeats }) {
-  const [bookedSeats, setBookedSeats] = useState([8, 10, 15, 20, 25, 40, 45, 50]); // Dummy booked seats
+const SeatSelection = () => {
+  const rows = ["A", "B", "C", "D", "E", "F", "G"]; // 7 rows
+  const seatsPerRow = 10; // 10 seats per row (total 70 seats)
+  const bookedSeats = ["A1", "B5", "C7", "D3", "E6", "F9", "G10"];
 
-  // Seat arrangement as per BookMyShow layout
-  const seatRows = {
-    M: [4, 4], // Sofa
-    L: [5, 5],
-    K: [6, 2, 6],
-    J: [20],
-    H: [20],
-    G: [20],
-    F: [20],
-    E: [20],
-    D: [20],
-    C: [20],
-    B: [20],
-    A: [20],
+  const [selectedSeats, setSelectedSeats] = useState([]);
+
+  const toggleSeatSelection = (seatNumber) => {
+    if (bookedSeats.includes(seatNumber)) return; // Prevent selecting booked seats
+    setSelectedSeats((prev) =>
+      prev.includes(seatNumber)
+        ? prev.filter((seat) => seat !== seatNumber)
+        : [...prev, seatNumber]
+    );
   };
 
-  const toggleSeat = (seatNumber) => {
-    if (bookedSeats.includes(seatNumber)) return; // Ignore booked seats
+  const getSeatColor = (seatNumber) => {
+    if (bookedSeats.includes(seatNumber)) return "bg-red-600 cursor-not-allowed"; // Booked (Red)
+    if (selectedSeats.includes(seatNumber)) return "bg-green-500"; // Selected (Green)
 
-    setSelectedSeats((prevSeats) => {
-      const newSeats = prevSeats.includes(seatNumber)
-        ? prevSeats.filter((seat) => seat !== seatNumber) // Remove if already selected
-        : [...prevSeats, seatNumber]; // Add if not selected
+    const row = seatNumber.charAt(0);
+    if (["A", "B", "C", "D"].includes(row)) return "bg-gray-500 hover:bg-gray-400"; // Silver
+    if (["E", "F"].includes(row)) return "bg-yellow-500 hover:bg-yellow-400"; // Gold
+    if (["G"].includes(row)) return "bg-blue-500 hover:bg-blue-400"; // Platinum
 
-      console.log("Selected Seats:", newSeats);
-      return newSeats;
-    });
+    return "bg-gray-700 hover:bg-gray-500";
   };
 
   return (
-    <div className="w-full h-screen flex flex-col items-center justify-start bg-black text-white p-4">
-      {/* SCREEN Indicator */}
-      <div className="text-lg font-bold text-gray-300 tracking-wider mb-6">🎥 SCREEN 1 - All Eyes This Way Please!</div>
+    <div className="w-full flex flex-col items-center text-white p-6 min-h-screen bg-black">
+      {/* Theater Screen Section */}
+      <div className="w-full flex flex-col items-center mb-10">
+        <div className="w-3/4 h-12 bg-gray-300 rounded-t-2xl flex items-center justify-center text-black text-lg font-bold shadow-lg">
+          📽️ THEATER SCREEN | "Look this way 👀"
+        </div>
+      </div>
 
-      {/* Render Rows */}
-      {Object.entries(seatRows).map(([rowLabel, seatGroups], rowIndex) => (
-        <div key={rowLabel} className="flex items-center mb-2">
-          {/* Row Label (Left Side) */}
-          <div className="text-yellow-400 font-bold text-lg w-6">{rowLabel}</div>
+      {/* Column Numbers */}
+      <div className="grid grid-cols-11 gap-6 mb-4">
+        <div className="w-12 h-12"></div> {/* Empty space for row labels */}
+        {[...Array(seatsPerRow)].map((_, index) => (
+          <div key={index} className="w-12 h-12 flex items-center justify-center font-bold text-gray-400">
+            {index + 1}
+          </div>
+        ))}
+      </div>
 
-          {/* Seat Groups */}
-          {seatGroups.map((groupSize, groupIndex) => (
-            <div key={groupIndex} className="flex space-x-2 mx-4">
-              {[...Array(groupSize)].map((_, seatIndex) => {
-                const seatNumber = rowIndex * 20 + groupIndex * groupSize + seatIndex + 1;
-                const isSelected = selectedSeats.includes(seatNumber);
-                const isBooked = bookedSeats.includes(seatNumber);
+      {/* Seat Grid with Row Labels */}
+      {rows.map((row, rowIndex) => (
+        <div key={row} className={`flex items-center gap-6 mb-2 ${rowIndex === 4 || rowIndex === 6 ? 'mt-6' : ''}`}>
+          {/* Row Label */}
+          <div className="w-12 h-12 flex items-center justify-center font-bold text-gray-400">{row}</div>
 
-                return (
-                  <motion.button
-                    key={seatNumber}
-                    whileTap={{ scale: 0.85 }}
-                    whileHover={{ scale: 1.1 }}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg text-md font-bold transition-all
-                      ${isBooked ? "bg-red-600 text-white cursor-not-allowed" : ""}
-                      ${isSelected ? "bg-green-500 text-black scale-105" : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"}
-                    `}
-                    onClick={() => toggleSeat(seatNumber)}
-                    disabled={isBooked}
-                  >
-                    {isBooked ? "❌" : seatNumber}
-                  </motion.button>
-                );
-              })}
-            </div>
-          ))}
+          {/* Seats */}
+          <div className="grid grid-cols-10 gap-6">
+            {[...Array(seatsPerRow)].map((_, index) => {
+              const seatNumber = `${row}${index + 1}`;
+              return (
+                <div
+                  key={seatNumber}
+                  className={`w-12 h-12 flex items-center justify-center rounded-lg text-white font-bold cursor-pointer transition-all ${getSeatColor(seatNumber)}`}
+                  onClick={() => toggleSeatSelection(seatNumber)}
+                >
+                  {seatNumber}
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
 
-      {/* Pricing Details */}
-      <div className="text-sm text-gray-400 mt-6">
-        🛋 **Sofa (Platinum) ₹270** | 🎟 **Regular ₹190**
+      {/* Seat Categories */}
+      <div className="mt-10 text-center">
+        <div className="text-lg font-bold mb-2">Seat Categories</div>
+        <div className="flex gap-8">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-gray-500 rounded"></div>
+            <span>Silver (A–D)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-yellow-500 rounded"></div>
+            <span>Gold (E–F)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-500 rounded"></div>
+            <span>Platinum (G)</span>
+          </div>
+        </div>
       </div>
-
-      {/* Confirm Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="mt-6 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold py-3 px-8 rounded-md shadow-lg hover:shadow-red-500 transition-all"
-      >
-        Confirm Selection
-      </motion.button>
     </div>
   );
-}
+};
+
+export default SeatSelection;
