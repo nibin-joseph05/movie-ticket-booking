@@ -59,19 +59,21 @@ export default function Showtimes() {
     fetchSeatPrices();
   }, []);
 
+
   useEffect(() => {
     if (
       bookingData?.category &&
       bookingData?.seats?.length > 0 &&
       activeShowtime?.time &&
       movieId &&
-      theatreId
+      theatreId &&
+      selectedDate
     ) {
-      console.log("Redirecting with:", { movieId, theatreId, activeShowtime, bookingData });
+      console.log("Redirecting with:", { movieId, theatreId, activeShowtime, bookingData, selectedDate });
 
-      window.location.href = `/booking?movieId=${encodeURIComponent(movieId)}&theatreId=${encodeURIComponent(theatreId)}&showtime=${encodeURIComponent(activeShowtime.time)}&category=${encodeURIComponent(bookingData.category)}&seats=${encodeURIComponent(bookingData.seats)}&price=${encodeURIComponent(bookingData.price)}`;
+      window.location.href = `/booking?movieId=${encodeURIComponent(movieId)}&theatreId=${encodeURIComponent(theatreId)}&showtime=${encodeURIComponent(activeShowtime.time)}&category=${encodeURIComponent(bookingData.category)}&seats=${encodeURIComponent(bookingData.seats)}&price=${encodeURIComponent(bookingData.price)}&date=${encodeURIComponent(selectedDate)}`;
     }
-  }, [bookingData, activeShowtime, movieId, theatreId]);
+  }, [bookingData, activeShowtime, movieId, theatreId, selectedDate]);
 
 
 
@@ -354,6 +356,7 @@ export default function Showtimes() {
             price={selectedCategory?.price ?? 0}
             movie={movieId}
             theater={theatreId}
+            date={selectedDate}
           />
         )}
 

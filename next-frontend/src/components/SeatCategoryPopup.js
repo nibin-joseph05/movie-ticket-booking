@@ -21,14 +21,14 @@ const seatIcons = [
   <FaRocket size={30} />
 ];
 
-export default function SeatCategoryPopup({ onClose, selectedCategory, showtime, price, movie, theater }) {
+export default function SeatCategoryPopup({ onClose, selectedCategory, showtime, price, movie, theater, date }) {
   const [selectedSeats, setSelectedSeats] = useState(1);
   const router = useRouter();
 
   const handleConfirmBooking = () => {
     // Navigate to BookingPage with URL parameters
     router.push(
-      `/booking?movie=${encodeURIComponent(movie)}&theater=${encodeURIComponent(theater)}&showtime=${encodeURIComponent(showtime)}&category=${encodeURIComponent(selectedCategory)}&seats=${selectedSeats}&price=${price * selectedSeats}`
+      `/booking?movie=${encodeURIComponent(movie)}&theater=${encodeURIComponent(theater)}&showtime=${encodeURIComponent(showtime)}&category=${encodeURIComponent(selectedCategory)}&seats=${selectedSeats}&price=${price * selectedSeats}&date=${encodeURIComponent(date)}`
     );
   };
 
