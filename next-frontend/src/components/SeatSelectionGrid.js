@@ -1,24 +1,41 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const SeatSelection = () => {
+const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category }) => {
   const rows = ["A", "B", "C", "D", "E", "F", "G"]; // 7 rows
   const seatsPerRow = 10; // 10 seats per row (total 70 seats)
-  const bookedSeats = ["A1", "B5", "C7", "D3", "E6", "F9", "G10"];
-
-  const [selectedSeats, setSelectedSeats] = useState([]);
 
   const toggleSeatSelection = (seatNumber) => {
-    if (bookedSeats.includes(seatNumber)) return; // Prevent selecting booked seats
+    const row = seatNumber.charAt(0);
+
+    // Check if the selected seat is in the same category
+    if (
+      (category === "Silver" && !["A", "B", "C", "D"].includes(row)) ||
+      (category === "Gold" && !["E", "F"].includes(row)) ||
+      (category === "Platinum" && !["G"].includes(row))
+    ) {
+      const confirmChange = window.confirm(
+        `You selected a seat from a different category (${row}). Do you want to continue?`
+      );
+      if (!confirmChange) return; // If the user clicks "Cancel," do nothing
+      window.history.back(); // If the user clicks "OK," redirect to the previous page
+      return;
+    }
+
+    // Check if the user is trying to select more seats than allowed (only if maxSeats > 0)
+    if (maxSeats > 0 && selectedSeats.length >= maxSeats && !selectedSeats.includes(seatNumber)) {
+      alert(`You can only select up to ${maxSeats} seat(s). Please deselect a seat to select another.`);
+      return;
+    }
+
     setSelectedSeats((prev) =>
       prev.includes(seatNumber)
-        ? prev.filter((seat) => seat !== seatNumber)
-        : [...prev, seatNumber]
+        ? prev.filter((seat) => seat !== seatNumber) // Deselect the seat if already selected
+        : [...prev, seatNumber] // Select the seat if not already selected
     );
   };
 
   const getSeatColor = (seatNumber) => {
-    if (bookedSeats.includes(seatNumber)) return "bg-red-600 cursor-not-allowed"; // Booked (Red)
     if (selectedSeats.includes(seatNumber)) return "bg-green-500 shadow-lg shadow-green-400 scale-110"; // Selected (Green)
 
     const row = seatNumber.charAt(0);
@@ -41,7 +58,6 @@ const SeatSelection = () => {
         >
           🎬 All eyes this way please!
         </motion.div>
-
       </div>
 
       {/* Column Numbers */}
@@ -102,4 +118,4 @@ const SeatSelection = () => {
   );
 };
 
-export default SeatSelection;
+export default SeatSelectionGrid;

@@ -12,14 +12,15 @@ export default function BookingPage() {
   const theaterId = searchParams.get("theater");
   const showtime = searchParams.get("showtime");
   const category = searchParams.get("category");
-  const seats = searchParams.get("seats");
-  const price = searchParams.get("price");
+  const seats = parseInt(searchParams.get("seats"), 10); // Parse seats as a number
+  const price = parseFloat(searchParams.get("price")); // Total price from URL
   const date = searchParams.get("date");
 
   // State for movie and theater details
   const [bookingDetails, setBookingDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSeats, setSelectedSeats] = useState([]); // Initialize as an empty array
 
   // Fetch movie and theater details
   useEffect(() => {
@@ -42,6 +43,20 @@ export default function BookingPage() {
   // Handle back button click
   const handleBack = () => {
     window.history.back();
+  };
+
+  // Handle book and pay button click
+  const handleBookAndPay = () => {
+    const queryParams = new URLSearchParams({
+      movie: movieId,
+      theater: theaterId,
+      showtime,
+      category,
+      seats: selectedSeats.join(","), // Pass selected seats as a comma-separated string
+      price: price.toFixed(2), // Use the total price from the URL
+      date,
+    });
+    window.location.href = `/payment?${queryParams.toString()}`;
   };
 
   // Display loading or error state
@@ -114,9 +129,52 @@ export default function BookingPage() {
         </p>
       </motion.div>
 
+      {/* Book and Pay Button - Top Right */}
+      {selectedSeats.length > 0 && (
+        <motion.div
+          className="absolute top-4 right-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <button
+            onClick={handleBookAndPay}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 relative group"
+          >
+            {/* Glow Effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+
+            {/* Button Content */}
+            <span className="font-semibold text-lg">Book and Pay</span>
+            <span className="text-xl font-bold">${price.toFixed(2)}</span> {/* Use the total price from the URL */}
+
+            {/* Shopping Cart Icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 ml-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </button>
+        </motion.div>
+      )}
+
       {/* Seat Selection Grid Below */}
       <div className="flex flex-col items-center mt-20">
-        <SeatSelectionGrid selectedSeats={[]} setSelectedSeats={() => {}} />
+        <SeatSelectionGrid
+          selectedSeats={selectedSeats}
+          setSelectedSeats={setSelectedSeats}
+          maxSeats={seats} // Pass the number of seats directly (not as an array length)
+          category={category}
+        />
       </div>
     </div>
   );
