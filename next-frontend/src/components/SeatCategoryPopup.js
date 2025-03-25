@@ -28,7 +28,7 @@ export default function SeatCategoryPopup({ onClose, selectedCategory, showtime,
   const handleConfirmBooking = () => {
     // Navigate to BookingPage with URL parameters
     router.push(
-      `/booking?movie=${encodeURIComponent(movie)}&theater=${encodeURIComponent(theater)}&showtime=${encodeURIComponent(showtime)}&category=${encodeURIComponent(selectedCategory)}&seats=${selectedSeats}&price=${price * selectedSeats}&date=${encodeURIComponent(date)}`
+      `/booking?movie=${encodeURIComponent(movie)}&theater=${encodeURIComponent(theater)}&showtime=${encodeURIComponent(showtime)}&category=${encodeURIComponent(selectedCategory)}&seats=${selectedSeats}&price=${price}&date=${encodeURIComponent(date)}`
     );
   };
 

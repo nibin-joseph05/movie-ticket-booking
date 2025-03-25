@@ -47,13 +47,23 @@ export default function BookingPage() {
 
   // Handle book and pay button click
   const handleBookAndPay = () => {
+    // Check if the user is trying to proceed with fewer seats than initially specified
+    if (selectedSeats.length < seats) {
+      const confirmProceed = window.confirm(
+        `You are trying to proceed with ${selectedSeats.length} seat(s), but you initially selected ${seats} seat(s). Do you want to continue?`
+      );
+      if (!confirmProceed) return; // If the user clicks "Cancel," do nothing
+    }
+
+    const totalPrice = price * selectedSeats.length; // Calculate total price dynamically
+
     const queryParams = new URLSearchParams({
       movie: movieId,
       theater: theaterId,
       showtime,
       category,
       seats: selectedSeats.join(","), // Pass selected seats as a comma-separated string
-      price: price.toFixed(2), // Use the total price from the URL
+      price: totalPrice.toFixed(2), // Use the dynamically calculated price
       date,
     });
     window.location.href = `/payment?${queryParams.toString()}`;
@@ -62,7 +72,7 @@ export default function BookingPage() {
   // Display loading or error state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex items-center justify-center">
         <motion.div
           className="flex flex-col items-center"
           initial={{ opacity: 0, y: -20 }}
@@ -78,7 +88,7 @@ export default function BookingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex items-center justify-center">
         <motion.div
           className="text-center"
           initial={{ opacity: 0, y: -20 }}
@@ -88,7 +98,7 @@ export default function BookingPage() {
           <p className="text-red-500">Error: {error}</p>
           <motion.button
             onClick={handleBack}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -101,7 +111,7 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white p-6">
       {/* Back Button */}
       <button
         onClick={handleBack}
@@ -139,14 +149,14 @@ export default function BookingPage() {
         >
           <button
             onClick={handleBookAndPay}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 relative group"
+            className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-500 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 relative group"
           >
             {/* Glow Effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-pink-500 rounded-lg blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
 
             {/* Button Content */}
             <span className="font-semibold text-lg">Book and Pay</span>
-            <span className="text-xl font-bold">${price.toFixed(2)}</span> {/* Use the total price from the URL */}
+            <span className="text-xl font-bold">{(price * selectedSeats.length).toFixed(2)} Rs</span> {/* Dynamic Price */}
 
             {/* Shopping Cart Icon */}
             <svg

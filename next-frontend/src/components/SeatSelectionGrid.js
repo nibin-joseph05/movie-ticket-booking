@@ -22,10 +22,12 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
       return;
     }
 
-    // Check if the user is trying to select more seats than allowed (only if maxSeats > 0)
+    // Check if the user is trying to select more seats than allowed
     if (maxSeats > 0 && selectedSeats.length >= maxSeats && !selectedSeats.includes(seatNumber)) {
-      alert(`You can only select up to ${maxSeats} seat(s). Please deselect a seat to select another.`);
-      return;
+      const confirmExceed = window.confirm(
+        `You are trying to select more seats than initially specified (${maxSeats}). Do you want to continue?`
+      );
+      if (!confirmExceed) return; // If the user clicks "Cancel," do nothing
     }
 
     setSelectedSeats((prev) =>
