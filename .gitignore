@@ -33,3 +33,5 @@ Thumbs.db
 # Misc
 .env
 .vscode/
+
+spring-backend/.env.properties"spring-backend/.env.properties" 
