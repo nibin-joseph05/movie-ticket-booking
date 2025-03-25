@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
@@ -57,25 +59,53 @@ public class FoodController {
             @RequestParam String query) {
 
         try {
-            // Since the API doesn't have search, we'll filter locally from all items
-            Object[] allItems = restTemplate.getForObject(FOOD_API_BASE_URL + "/best-foods", Object[].class);
+            // Get all categories first
+            List<String> categories = Arrays.asList(
+                    "burgers", "pizzas", "sandwiches", "ice-cream",
+                    "drinks", "bbqs", "best-foods", "breads"
+            );
 
             List<Map<String, Object>> results = new ArrayList<>();
-            if (allItems != null) {
-                for (Object item : allItems) {
-                    Map<String, Object> foodItem = (Map<String, Object>) item;
-                    String name = foodItem.get("name").toString().toLowerCase();
-                    if (name.contains(query.toLowerCase())) {
-                        results.add(formatFoodItem(foodItem));
+
+            // Search across all categories
+            for (String category : categories) {
+                String apiUrl = FOOD_API_BASE_URL + "/" + category;
+                Object[] items = restTemplate.getForObject(apiUrl, Object[].class);
+
+                if (items != null) {
+                    for (Object item : items) {
+                        Map<String, Object> foodItem = (Map<String, Object>) item;
+                        String name = foodItem.get("name").toString().toLowerCase();
+                        if (name.contains(query.toLowerCase())) {
+                            results.add(formatFoodItem(foodItem));
+                        }
                     }
                 }
             }
 
-            return ResponseEntity.ok(results.isEmpty() ? getFallbackItems() : results);
+            // If no results found, return fallback items that match the query
+            if (results.isEmpty()) {
+                List<Map<String, Object>> fallbackItems = getFallbackItems();
+                return ResponseEntity.ok(
+                        fallbackItems.stream()
+                                .filter(item -> item.get("name").toString().toLowerCase()
+                                        .contains(query.toLowerCase()))
+                                .collect(Collectors.toList())
+                );
+            }
+
+            return ResponseEntity.ok(results);
 
         } catch (Exception e) {
             System.err.println("Error searching food items: " + e.getMessage());
-            return ResponseEntity.ok(getFallbackItems());
+            // Return filtered fallback items
+            List<Map<String, Object>> fallbackItems = getFallbackItems();
+            return ResponseEntity.ok(
+                    fallbackItems.stream()
+                            .filter(item -> item.get("name").toString().toLowerCase()
+                                    .contains(query.toLowerCase()))
+                            .collect(Collectors.toList())
+            );
         }
     }
 

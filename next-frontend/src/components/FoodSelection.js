@@ -18,42 +18,45 @@ export default function FoodSelection({
       try {
         const response = await fetch('http://localhost:8080/api/food/categories');
         const data = await response.json();
-        setCategories(['best-foods', ...data]);
+        const uniqueCategories = ['best-foods', ...data.filter(cat => cat !== 'best-foods')];
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Error fetching categories:", error);
         setCategories(['best-foods', 'burgers', 'pizzas', 'drinks', 'ice-cream']);
       }
     };
-
     fetchCategories();
   }, []);
 
-  useEffect(() => {
-    const fetchFoodItems = async () => {
-      setLoading(true);
-      try {
-        let url = `http://localhost:8080/api/food/items?category=${activeCategory}`;
-        if (searchQuery) {
-          url = `http://localhost:8080/api/food/search?query=${encodeURIComponent(searchQuery)}`;
-        }
-
-        const response = await fetch(url);
-        const data = await response.json();
-        setFoodItems(data);
-      } catch (error) {
-        console.error("Error fetching food items:", error);
-        setFoodItems([]);
-      } finally {
-        setLoading(false);
+  const fetchFoodItems = async () => {
+    setLoading(true);
+    try {
+      let url = `http://localhost:8080/api/food/items?category=${activeCategory}`;
+      if (searchQuery.trim()) {
+        url = `http://localhost:8080/api/food/search?query=${encodeURIComponent(searchQuery.trim())}`;
       }
-    };
+      const response = await fetch(url);
+      const data = await response.json();
+      setFoodItems(data);
+    } catch (error) {
+      console.error("Error fetching food items:", error);
+      setFoodItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchFoodItems();
     }, 300);
-
     return () => clearTimeout(timer);
   }, [activeCategory, searchQuery]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    fetchFoodItems();
+  };
 
   const handleAddFood = (foodItem) => {
     setSelectedFood(prev => {
@@ -64,9 +67,8 @@ export default function FoodSelection({
             ? { ...item, quantity: Math.min(item.quantity + 1, 10) }
             : item
         );
-      } else {
-        return [...prev, { ...foodItem, quantity: 1 }];
       }
+      return [...prev, { ...foodItem, quantity: 1 }];
     });
   };
 
@@ -75,8 +77,7 @@ export default function FoodSelection({
       prev.map(item => {
         if (item.id === id) {
           const newQuantity = item.quantity + change;
-          if (newQuantity < 1) return item;
-          if (newQuantity > 10) return item;
+          if (newQuantity < 1 || newQuantity > 10) return item;
           return { ...item, quantity: newQuantity };
         }
         return item;
@@ -97,18 +98,16 @@ export default function FoodSelection({
         <p className="text-gray-400">Enhance your movie experience with our delicious snacks</p>
       </div>
 
-      {/* Food Search */}
-      <div className="flex mb-6 relative">
+      <form onSubmit={handleSearchSubmit} className="flex mb-6 relative">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && setSearchQuery(searchQuery)}
           placeholder="Search for food or drinks..."
           className="flex-1 bg-[#2a2a3a]/50 text-white rounded-l-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 border border-[#3a3a4e] placeholder-gray-500"
         />
         <button
-          onClick={() => setSearchQuery(searchQuery)}
+          type="submit"
           disabled={!searchQuery.trim()}
           className={`px-5 py-3 rounded-r-xl flex items-center justify-center transition-all ${
             !searchQuery.trim()
@@ -120,9 +119,8 @@ export default function FoodSelection({
             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
           </svg>
         </button>
-      </div>
+      </form>
 
-      {/* Food Categories */}
       <div className="flex space-x-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
         {categories.map((cat) => (
           <button
@@ -142,7 +140,6 @@ export default function FoodSelection({
         ))}
       </div>
 
-      {/* Food Items */}
       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#3a3a4e] scrollbar-track-[#1a1a24]">
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -153,20 +150,21 @@ export default function FoodSelection({
             />
           </div>
         ) : foodItems.length > 0 ? (
-          foodItems.map((item, index) => {
+          foodItems.map((item) => {
             const isSelected = selectedFood.some(selected => selected.id === item.id);
+            const quantity = isSelected
+              ? selectedFood.find(selected => selected.id === item.id)?.quantity || 1
+              : 0;
 
             return (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
                 className={`bg-[#2a2a3a]/70 rounded-xl p-4 flex gap-4 items-start border ${
                   isSelected ? 'border-red-500/50' : 'border-[#3a3a4e]'
                 } hover:border-red-400/50 transition-all`}
               >
-                {/* Food Image */}
                 <div className="w-24 h-24 bg-[#1a1a24] rounded-lg overflow-hidden flex-shrink-0 relative">
                   {item.image ? (
                     <img
@@ -188,7 +186,7 @@ export default function FoodSelection({
                   )}
                   {isSelected && (
                     <div className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md">
-                      {selectedFood.find(selected => selected.id === item.id)?.quantity || 1}
+                      {quantity}
                     </div>
                   )}
                 </div>
@@ -210,7 +208,6 @@ export default function FoodSelection({
 
                 <div className="flex flex-col items-end">
                   <span className="font-bold text-lg text-red-400">{item.price.toFixed(2)} Rs</span>
-
                   {isSelected ? (
                     <div className="flex items-center space-x-2 mt-3">
                       <motion.button
@@ -223,9 +220,7 @@ export default function FoodSelection({
                         </svg>
                       </motion.button>
 
-                      <span className="text-sm font-medium w-6 text-center">
-                        {selectedFood.find(selected => selected.id === item.id)?.quantity || 1}
-                      </span>
+                      <span className="text-sm font-medium w-6 text-center">{quantity}</span>
 
                       <motion.button
                         onClick={() => handleQuantityChange(item.id, 1)}
@@ -275,7 +270,6 @@ export default function FoodSelection({
         )}
       </div>
 
-      {/* Added Notes Section */}
       <div className="mt-6 bg-gray-800/50 rounded-lg p-4 border border-gray-700">
         <h4 className="text-sm font-semibold text-gray-300 mb-2">Important Notes:</h4>
         <ul className="text-xs text-gray-400 space-y-1">

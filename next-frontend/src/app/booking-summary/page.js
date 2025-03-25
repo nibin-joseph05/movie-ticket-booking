@@ -223,7 +223,7 @@ export default function BookingSummaryPage() {
         >
           <motion.button
             onClick={handleProceedToPayment}
-            className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-3 relative group overflow-hidden"
+            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-3 relative group overflow-hidden"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

@@ -168,16 +168,7 @@ export default function BookingDetails({
                 ))}
               </div>
 
-              {/* Food Notes Section */}
-              <div className="bg-gray-800/50 rounded-lg p-4 mb-6 border border-gray-700">
-                <h4 className="text-sm font-semibold text-gray-300 mb-2">Important Notes:</h4>
-                <ul className="text-xs text-gray-400 space-y-1">
-                  <li>1. Images are for representation purposes only.</li>
-                  <li>2. Prices inclusive of taxes.</li>
-                  <li>3. All nutritional information is indicative, values are per serve as shared by the Cinema and may vary depending on the ingredients and portion size.</li>
-                  <li>4. An average active adult requires 2000 kcal energy per day, however, calorie needs may vary.</li>
-                </ul>
-              </div>
+
 
               <div className="border-t border-gray-600/50 pt-4 space-y-3">
                 <div className="flex justify-between">
