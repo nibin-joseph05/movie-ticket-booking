@@ -52,7 +52,7 @@ export default function BookingPage() {
       const confirmProceed = window.confirm(
         `You are trying to proceed with ${selectedSeats.length} seat(s), but you initially selected ${seats} seat(s). Do you want to continue?`
       );
-      if (!confirmProceed) return; // If the user clicks "Cancel," do nothing
+      if (!confirmProceed) return;
     }
 
     const totalPrice = price * selectedSeats.length; // Calculate total price dynamically
@@ -66,7 +66,7 @@ export default function BookingPage() {
       price: totalPrice.toFixed(2), // Use the dynamically calculated price
       date,
     });
-    window.location.href = `/payment?${queryParams.toString()}`;
+    window.location.href = `/booking-summary?${queryParams.toString()}`;
   };
 
   // Display loading or error state
