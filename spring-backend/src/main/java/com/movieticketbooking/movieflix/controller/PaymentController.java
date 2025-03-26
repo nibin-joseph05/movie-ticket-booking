@@ -9,9 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.apache.commons.codec.digest.HmacUtils;
-import lombok.Data;
-import jakarta.servlet.http.HttpSession;  // Add this import
-import com.movieticketbooking.movieflix.models.User;  // Add this import if User class exists in your models
+import jakarta.servlet.http.HttpSession;
+import com.movieticketbooking.movieflix.models.User;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -23,40 +23,49 @@ public class PaymentController {
     @Value("${razorpay.api.key.secret}")
     private String razorpayKeySecret;
 
-    // Create order
     @PostMapping("/create-order")
     public ResponseEntity<?> createOrder(@RequestBody OrderRequest orderRequest, HttpSession session) {
-        // Check if user is logged in
+
+        System.out.println("Received order request: " + orderRequest);
+        System.out.println("Amount: " + orderRequest.getAmount());
+        System.out.println("Notes: " + orderRequest.getNotes());
         User user = (User) session.getAttribute("user");
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not logged in");
         }
 
-        // Rest of your order creation logic
         try {
             RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
 
             JSONObject orderRequestJson = new JSONObject();
-            orderRequestJson.put("amount", orderRequest.getAmount() * 100);
-            orderRequestJson.put("currency", "INR");
-            orderRequestJson.put("receipt", orderRequest.getReceipt());
-            orderRequestJson.put("payment_capture", 1);
+            // Explicitly cast to primitive double to avoid ambiguity
+            orderRequestJson.put("amount", (double) orderRequest.getAmount() * 100);
+            orderRequestJson.put("currency", (Object) "INR");
+            orderRequestJson.put("receipt", (Object) orderRequest.getReceipt());
+            orderRequestJson.put("payment_capture", (Object) 1);
 
-            // Add user email to notes
-            orderRequestJson.put("notes", new JSONObject()
-                    .put("userId", user.getEmail())
-                    .put("bookingDetails", orderRequest.getNotes()));
+            // Create notes JSON object separately to avoid ambiguity
+            JSONObject notesJson = new JSONObject();
+            notesJson.put("userId", (Object) user.getEmail());
+            notesJson.put("bookingDetails", (Object) new JSONObject(orderRequest.getNotes()));
+            orderRequestJson.put("notes", notesJson);
 
             Order order = razorpay.orders.create(orderRequestJson);
 
-            return ResponseEntity.ok(order.toString());
+            JSONObject response = new JSONObject();
+            response.put("id", (Object) order.get("id"));
+            response.put("amount", (Object) order.get("amount"));
+            response.put("currency", (Object) order.get("currency"));
+            response.put("key", (Object) razorpayKeyId);
+
+            return ResponseEntity.ok(response.toString());
         } catch (RazorpayException e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error creating order: " + e.getMessage());
         }
     }
 
-    // Verify payment signature
     @PostMapping("/verify-payment")
     public ResponseEntity<?> verifyPayment(@RequestBody PaymentVerificationRequest verificationRequest) {
         try {
@@ -66,29 +75,51 @@ public class PaymentController {
             );
 
             if (generatedSignature.equals(verificationRequest.getRazorpaySignature())) {
-                return ResponseEntity.ok("Payment verified successfully");
+                return ResponseEntity.ok(new JSONObject()
+                        .put("status", (Object) "success")
+                        .put("orderId", (Object) verificationRequest.getRazorpayOrderId())
+                        .put("paymentId", (Object) verificationRequest.getRazorpayPaymentId())
+                        .toString());
             } else {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Payment verification failed");
+                        .body(new JSONObject()
+                                .put("status", (Object) "failed")
+                                .put("message", (Object) "Payment verification failed")
+                                .toString());
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error verifying payment: " + e.getMessage());
+                    .body(new JSONObject()
+                            .put("status", (Object) "error")
+                            .put("message", (Object) ("Error verifying payment: " + e.getMessage()))
+                            .toString());
         }
     }
 
-    // DTO classes
-    @Data
+    // DTO classes remain the same as before
     public static class OrderRequest {
-        private int amount;
+        private double amount;
         private String receipt;
-        private JSONObject notes;  // Add this field to store notes
+        private Map<String, String> notes;
+
+        public double getAmount() { return amount; }
+        public void setAmount(double amount) { this.amount = amount; }
+        public String getReceipt() { return receipt; }
+        public void setReceipt(String receipt) { this.receipt = receipt; }
+        public Map<String, String> getNotes() { return notes; }
+        public void setNotes(Map<String, String> notes) { this.notes = notes; }
     }
 
-    @Data
     public static class PaymentVerificationRequest {
         private String razorpayOrderId;
         private String razorpayPaymentId;
         private String razorpaySignature;
+
+        public String getRazorpayOrderId() { return razorpayOrderId; }
+        public void setRazorpayOrderId(String razorpayOrderId) { this.razorpayOrderId = razorpayOrderId; }
+        public String getRazorpayPaymentId() { return razorpayPaymentId; }
+        public void setRazorpayPaymentId(String razorpayPaymentId) { this.razorpayPaymentId = razorpayPaymentId; }
+        public String getRazorpaySignature() { return razorpaySignature; }
+        public void setRazorpaySignature(String razorpaySignature) { this.razorpaySignature = razorpaySignature; }
     }
 }

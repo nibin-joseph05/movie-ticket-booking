@@ -111,23 +111,20 @@ export default function BookingSummaryPage() {
   };
 
   // Handle proceed to payment
-  // Handle proceed to payment
   const handleProceedToPayment = async () => {
-    // First check login status
     try {
+      // 1. Check login status
       const sessionCheck = await fetch('http://localhost:8080/user/check-session', {
         credentials: 'include'
       });
       const sessionData = await sessionCheck.json();
 
       if (!sessionData.isLoggedIn) {
-        // Show confirmation dialog for non-logged in users
         const shouldLogin = window.confirm(
           "You need to login to complete your booking. Do you want to proceed to login page?"
         );
 
         if (shouldLogin) {
-          // Store current booking details in sessionStorage
           sessionStorage.setItem('pendingBooking', JSON.stringify({
             movieId,
             theaterId,
@@ -139,7 +136,6 @@ export default function BookingSummaryPage() {
             food: selectedFood
           }));
 
-          // Redirect to login with return URL
           window.location.href = `/login?returnUrl=${encodeURIComponent('/booking-summary?' + new URLSearchParams({
             movie: movieId,
             theater: theaterId,
@@ -154,17 +150,16 @@ export default function BookingSummaryPage() {
         return;
       }
 
-      // For logged in users, show payment confirmation
+      // 2. Show payment confirmation
       const shouldProceed = window.confirm(
         `Total Amount: ${calculateTotalPrice().toFixed(2)} Rs\nDo you want to proceed with payment?`
       );
-
       if (!shouldProceed) return;
 
-      // Proceed with payment
+      // 3. Create Razorpay order
       const orderResponse = await fetch('http://localhost:8080/api/payments/create-order', {
         method: 'POST',
-        credentials: 'include', // Include session cookie
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -172,7 +167,7 @@ export default function BookingSummaryPage() {
           amount: calculateTotalPrice() * 100,
           receipt: `booking_${Date.now()}`,
           notes: {
-            userId: sessionData.user.email, // Send user identifier
+            userId: sessionData.user.email,
             movieId,
             theaterId,
             showtime,
@@ -184,14 +179,81 @@ export default function BookingSummaryPage() {
       });
 
       if (!orderResponse.ok) throw new Error("Failed to create payment order");
-
       const orderData = await orderResponse.json();
 
-      // Redirect to payment gateway
-      window.location.href = orderData.payment_url;
+      // 4. Load Razorpay script dynamically
+      const loadScript = (src) => {
+        return new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+      };
+
+      const isRazorpayLoaded = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+      if (!isRazorpayLoaded) {
+        throw new Error('Failed to load Razorpay SDK');
+      }
+
+      // 5. Initialize Razorpay payment
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MovieFlix",
+        description: "Movie Ticket Booking",
+        order_id: orderData.id,
+        handler: async function(response) {
+          // 6. Verify payment on server
+          try {
+            const verificationResponse = await fetch('http://localhost:8080/api/payments/verify-payment', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature
+              })
+            });
+
+            const verificationData = await verificationResponse.json();
+
+            if (verificationData.status === 'success') {
+              // 7. Payment successful - redirect to success page
+              window.location.href = `/booking-success?bookingId=${verificationData.orderId}`;
+            } else {
+              setError('Payment verification failed. Please contact support.');
+            }
+          } catch (error) {
+            setError('Error verifying payment: ' + error.message);
+          }
+        },
+        prefill: {
+          name: sessionData.user.name || '',
+          email: sessionData.user.email || '',
+          contact: sessionData.user.phone || ''
+        },
+        theme: {
+          color: "#F37254"
+        },
+        modal: {
+          ondismiss: function() {
+            setError('Payment was cancelled. Please try again.');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
 
     } catch (error) {
       setError(error.message);
+      console.error("Payment error:", error);
     }
   };
 
