@@ -111,67 +111,88 @@ export default function BookingSummaryPage() {
   };
 
   // Handle proceed to payment
+  // Handle proceed to payment
   const handleProceedToPayment = async () => {
-      // First check login status
-      try {
-          const sessionCheck = await fetch('http://localhost:8080/user/check-session', {
-              credentials: 'include'
-          });
-          const sessionData = await sessionCheck.json();
+    // First check login status
+    try {
+      const sessionCheck = await fetch('http://localhost:8080/user/check-session', {
+        credentials: 'include'
+      });
+      const sessionData = await sessionCheck.json();
 
-          if (!sessionData.isLoggedIn) {
-              // Store current booking details in sessionStorage
-              sessionStorage.setItem('pendingBooking', JSON.stringify({
-                  movieId,
-                  theaterId,
-                  showtime,
-                  category,
-                  seats,
-                  price: calculateTotalPrice(),
-                  date,
-                  food: selectedFood
-              }));
+      if (!sessionData.isLoggedIn) {
+        // Show confirmation dialog for non-logged in users
+        const shouldLogin = window.confirm(
+          "You need to login to complete your booking. Do you want to proceed to login page?"
+        );
 
-              // Redirect to login with return URL
-              window.location.href = `/login?returnUrl=${encodeURIComponent('/booking-summary?' + new URLSearchParams({
-                  movie: movieId,
-                  theater: theaterId,
-                  showtime,
-                  category,
-                  seats: seats.join(','),
-                  price: calculateTotalPrice().toFixed(2),
-                  date,
-                  food: JSON.stringify(selectedFood)
-              }).toString())}`;
-              return;
-          }
+        if (shouldLogin) {
+          // Store current booking details in sessionStorage
+          sessionStorage.setItem('pendingBooking', JSON.stringify({
+            movieId,
+            theaterId,
+            showtime,
+            category,
+            seats,
+            price: calculateTotalPrice(),
+            date,
+            food: selectedFood
+          }));
 
-          // Rest of your payment logic...
-          const orderResponse = await fetch('http://localhost:8080/api/payments/create-order', {
-              method: 'POST',
-              credentials: 'include', // Include session cookie
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                  amount: calculateTotalPrice() * 100,
-                  receipt: `booking_${Date.now()}`,
-                  notes: {
-                      userId: sessionData.user.email, // Send user identifier
-                      movieId,
-                      theaterId,
-                      showtime,
-                      seats: seats.join(','),
-                      date,
-                      foodItems: JSON.stringify(selectedFood)
-                  }
-              })
-          });
-          // ... rest of payment handling
-
-      } catch (error) {
-          setError(error.message);
+          // Redirect to login with return URL
+          window.location.href = `/login?returnUrl=${encodeURIComponent('/booking-summary?' + new URLSearchParams({
+            movie: movieId,
+            theater: theaterId,
+            showtime,
+            category,
+            seats: seats.join(','),
+            price: calculateTotalPrice().toFixed(2),
+            date,
+            food: JSON.stringify(selectedFood)
+          }).toString())}`;
+        }
+        return;
       }
+
+      // For logged in users, show payment confirmation
+      const shouldProceed = window.confirm(
+        `Total Amount: ${calculateTotalPrice().toFixed(2)} Rs\nDo you want to proceed with payment?`
+      );
+
+      if (!shouldProceed) return;
+
+      // Proceed with payment
+      const orderResponse = await fetch('http://localhost:8080/api/payments/create-order', {
+        method: 'POST',
+        credentials: 'include', // Include session cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: calculateTotalPrice() * 100,
+          receipt: `booking_${Date.now()}`,
+          notes: {
+            userId: sessionData.user.email, // Send user identifier
+            movieId,
+            theaterId,
+            showtime,
+            seats: seats.join(','),
+            date,
+            foodItems: JSON.stringify(selectedFood)
+          }
+        })
+      });
+
+      if (!orderResponse.ok) throw new Error("Failed to create payment order");
+
+      const orderData = await orderResponse.json();
+
+      // Redirect to payment gateway
+      window.location.href = orderData.payment_url;
+
+    } catch (error) {
+      setError(error.message);
+    }
   };
 
   // Loading state
