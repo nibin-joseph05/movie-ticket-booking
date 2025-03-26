@@ -28,6 +28,7 @@ export default function Showtimes() {
   const [bookingData, setBookingData] = useState(null);
   const [activeShowtime, setActiveShowtime] = useState(null);
   const [seatPrices, setSeatPrices] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
 
 
 
@@ -102,20 +103,28 @@ export default function Showtimes() {
     setLoading(true);
     try {
       const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
-      const data = await res.json();
 
-      console.log("Fetched Showtimes:", data);  // Debugging log
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("API Response:", data); // Debug log
 
       if (Array.isArray(data)) {
-        setShowtimes(data.map(show => ({
-          time: show.time,
+        const formattedShowtimes = data.map(show => ({
+          time: show.time || "N/A",
           seatCategories: show.seatCategories || [],
-        })));
+          totalSeats: show.totalSeats || 0,
+          availableSeats: show.availableSeats || 0
+        }));
+        setShowtimes(formattedShowtimes);
       } else {
+        console.error("Unexpected data format:", data);
         setShowtimes([]);
       }
     } catch (error) {
-      console.error("Error fetching showtimes:", error);
+      console.error("Fetch error:", error);
       setShowtimes([]);
     } finally {
       setLoading(false);
@@ -259,9 +268,20 @@ export default function Showtimes() {
         </h2>
 
         {loading ? (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
-            Loading showtimes...
-          </motion.p>
+          <div className="flex flex-col items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500 mb-4"></div>
+            <p className="text-gray-400">Loading showtimes...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="text-center py-10">
+            <p className="text-red-500 mb-4">Error loading showtimes: {fetchError}</p>
+            <button
+              onClick={fetchShowtimes}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
         ) : showtimes.length > 0 ? (
           <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8">
             {showtimes.map((show, index) => {
@@ -343,9 +363,19 @@ export default function Showtimes() {
             })}
           </motion.div>
         ) : (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-gray-400 text-lg">
-            No showtimes available.
-          </motion.p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-10"
+          >
+            <p className="text-gray-400 text-lg">No showtimes available for selected date</p>
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Show Today's Showtimes
+            </button>
+          </motion.div>
         )}
 
         {isSeatPopupOpen && activeShowtime && movieId && theatreId && (

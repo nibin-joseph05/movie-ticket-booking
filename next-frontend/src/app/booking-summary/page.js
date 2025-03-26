@@ -1,6 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from "framer-motion";
 import BookingDetails from "@/components/BookingDetails";
 import FoodSelection from "@/components/FoodSelection";
@@ -16,6 +17,8 @@ export default function BookingSummaryPage() {
   const seats = searchParams.get("seats")?.split(",") || [];
   const price = parseFloat(searchParams.get("price")) || 0;
   const date = searchParams.get("date");
+  const router = useRouter();
+
 
 
   // State for booking details
@@ -66,6 +69,17 @@ export default function BookingSummaryPage() {
   }, [movieId, theaterId, searchParams]);
 
   useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
       const checkLoginStatus = async () => {
         try {
           const response = await fetch('http://localhost:8080/user/check-session', {
@@ -97,17 +111,23 @@ export default function BookingSummaryPage() {
 
   // Handle back button click
   const handleBack = () => {
-    const queryParams = new URLSearchParams({
-      movie: movieId,
-      date: date
-    });
-    window.location.href = `/showtimes?${queryParams.toString()}`;
+    router.push(`/showtimes?movie=${movieId}&date=${date}`);
   };
 
   // Calculate total price
   const calculateTotalPrice = () => {
-    const foodTotal = selectedFood.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    return price + foodTotal;
+    const basePrice = parseFloat(searchParams.get("price")) || 0;
+
+    const foodTotal = selectedFood.reduce((sum, item) => {
+      // Ensure both price and quantity are properly parsed as numbers
+      const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+      const itemQuantity = typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity;
+
+      return sum + (itemPrice * itemQuantity);
+    }, 0);
+
+    // Return with exactly 2 decimal places
+    return parseFloat((basePrice + foodTotal).toFixed(2));
   };
 
   // Handle proceed to payment
@@ -150,6 +170,17 @@ export default function BookingSummaryPage() {
         return;
       }
 
+          setLoading(true);
+
+          // Check if Razorpay is already loaded
+          if (!window.Razorpay) {
+            // If not loaded, wait a bit and check again
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!window.Razorpay) {
+              throw new Error('Payment gateway is taking longer than usual to load');
+            }
+          }
+
       // 2. Show payment confirmation
       const shouldProceed = window.confirm(
         `Total Amount: ${calculateTotalPrice().toFixed(2)} Rs\nDo you want to proceed with payment?`
@@ -164,7 +195,7 @@ export default function BookingSummaryPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: calculateTotalPrice() * 100,
+          amount: calculateTotalPrice() ,
           receipt: `booking_${Date.now()}`,
           notes: {
             userId: sessionData.user.email,

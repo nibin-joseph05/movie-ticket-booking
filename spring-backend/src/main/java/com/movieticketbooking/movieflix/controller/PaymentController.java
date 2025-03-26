@@ -37,9 +37,12 @@ public class PaymentController {
         try {
             RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
 
+
+            int amountInPaise = (int) Math.round(orderRequest.getAmount() * 100);
+
             JSONObject orderRequestJson = new JSONObject();
             // Explicitly cast to primitive double to avoid ambiguity
-            orderRequestJson.put("amount", (double) orderRequest.getAmount() * 100);
+            orderRequestJson.put("amount", amountInPaise);
             orderRequestJson.put("currency", (Object) "INR");
             orderRequestJson.put("receipt", (Object) orderRequest.getReceipt());
             orderRequestJson.put("payment_capture", (Object) 1);
