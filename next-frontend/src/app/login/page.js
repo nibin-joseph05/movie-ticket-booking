@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
@@ -13,62 +13,86 @@ export default function Login() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false); // OTP sending state
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
   const isOtpComplete = otp.every((digit) => digit !== "");
 
-
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsSendingOtp(true);
+      e.preventDefault();
+      setIsSendingOtp(true);
 
-    try {
-      const response = await fetch("http://localhost:8080/user/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      try {
+        const response = await fetch("http://localhost:8080/user/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+          credentials: "include"
+        });
 
-      const data = await response.json();
-      if (response.ok) {
-        setIsOtpSent(true);
-      } else {
-        alert(data.error || "Login failed");
+        const data = await response.json();
+        if (response.ok) {
+          setIsOtpSent(true);
+        } else {
+          alert(data.error || "Login failed");
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        alert("An error occurred. Please try again.");
+      } finally {
+        setIsSendingOtp(false);
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("An error occurred. Please try again.");
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
+    };
 
 
   const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return; // Allow only digits
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+      if (!/^\d*$/.test(value)) return;
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
 
-    // Auto-focus next input if available
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
-    }
-  };
-
+      if (value && index < 5) {
+        document.getElementById(`otp-${index + 1}`)?.focus();
+      }
+    };
 
 
   const verifyOtp = async () => {
       try {
-        const otpCode = otp.join(""); // Convert array to string
-        const response = await axios.post("http://localhost:8080/user/verify-otp", { email, otp: otpCode });
+        const otpCode = otp.join("");
+        const response = await axios.post(
+          "http://localhost:8080/user/verify-otp",
+          { email, otp: otpCode },
+          { withCredentials: true } // Include cookies
+        );
 
         if (response.status === 200) {
           const userData = response.data;
-
-          // Store user details in localStorage
           localStorage.setItem("user", JSON.stringify(userData));
 
-          alert("Login Successful!");
-          router.push("/"); // Redirect to homepage using Next.js router
+          // Check for pending booking
+          const pendingBooking = sessionStorage.getItem("pendingBooking");
+          if (pendingBooking) {
+            sessionStorage.removeItem("pendingBooking");
+            const bookingData = JSON.parse(pendingBooking);
+
+            // Reconstruct the booking summary URL
+            const queryParams = new URLSearchParams({
+              movie: bookingData.movieId,
+              theater: bookingData.theaterId,
+              showtime: bookingData.showtime,
+              category: bookingData.category,
+              seats: bookingData.seats.join(","),
+              price: bookingData.price.toFixed(2),
+              date: bookingData.date,
+              food: JSON.stringify(bookingData.food)
+            });
+
+            window.location.href = `/booking-summary?${queryParams.toString()}`;
+          } else if (returnUrl) {
+            window.location.href = returnUrl;
+          } else {
+            router.push("/");
+          }
         }
       } catch (error) {
         alert(error.response?.data?.error || "OTP Verification Failed");

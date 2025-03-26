@@ -17,15 +17,29 @@ export default function BookingSummaryPage() {
   const price = parseFloat(searchParams.get("price")) || 0;
   const date = searchParams.get("date");
 
+
   // State for booking details
   const [bookingDetails, setBookingDetails] = useState(null);
   const [foodItems, setFoodItems] = useState([]);
   const [selectedFood, setSelectedFood] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Fetch movie and theater details
   useEffect(() => {
+
+    const foodParam = searchParams.get("food");
+      if (foodParam) {
+        try {
+          const decodedFood = JSON.parse(decodeURIComponent(foodParam));
+          setSelectedFood(decodedFood);
+        } catch (error) {
+          console.error("Error parsing food items from URL:", error);
+        }
+      }
+
     const fetchData = async () => {
       try {
         const [detailsResponse, foodResponse] = await Promise.all([
@@ -49,7 +63,37 @@ export default function BookingSummaryPage() {
     };
 
     fetchData();
-  }, [movieId, theaterId]);
+  }, [movieId, theaterId, searchParams]);
+
+  useEffect(() => {
+      const checkLoginStatus = async () => {
+        try {
+          const response = await fetch('http://localhost:8080/user/check-session', {
+            credentials: 'include'
+          });
+
+          if (!response.ok) throw new Error("Session check failed");
+
+          const data = await response.json();
+          setIsLoggedIn(data.isLoggedIn);
+
+          if (data.isLoggedIn) {
+            setUser(data.user);
+            // Store user email in localStorage for easy access
+            localStorage.setItem('userEmail', data.user.email);
+          } else {
+            // Clear any existing user data if not logged in
+            localStorage.removeItem('userEmail');
+          }
+        } catch (error) {
+          console.error('Error checking login status:', error);
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      };
+      checkLoginStatus();
+  }, []);
+
 
   // Handle back button click
   const handleBack = () => {
@@ -67,18 +111,67 @@ export default function BookingSummaryPage() {
   };
 
   // Handle proceed to payment
-  const handleProceedToPayment = () => {
-    const queryParams = new URLSearchParams({
-      movie: movieId,
-      theater: theaterId,
-      showtime,
-      category,
-      seats: seats.join(","),
-      price: calculateTotalPrice().toFixed(2),
-      date,
-      food: JSON.stringify(selectedFood)
-    });
-    window.location.href = `/payment?${queryParams.toString()}`;
+  const handleProceedToPayment = async () => {
+      // First check login status
+      try {
+          const sessionCheck = await fetch('http://localhost:8080/user/check-session', {
+              credentials: 'include'
+          });
+          const sessionData = await sessionCheck.json();
+
+          if (!sessionData.isLoggedIn) {
+              // Store current booking details in sessionStorage
+              sessionStorage.setItem('pendingBooking', JSON.stringify({
+                  movieId,
+                  theaterId,
+                  showtime,
+                  category,
+                  seats,
+                  price: calculateTotalPrice(),
+                  date,
+                  food: selectedFood
+              }));
+
+              // Redirect to login with return URL
+              window.location.href = `/login?returnUrl=${encodeURIComponent('/booking-summary?' + new URLSearchParams({
+                  movie: movieId,
+                  theater: theaterId,
+                  showtime,
+                  category,
+                  seats: seats.join(','),
+                  price: calculateTotalPrice().toFixed(2),
+                  date,
+                  food: JSON.stringify(selectedFood)
+              }).toString())}`;
+              return;
+          }
+
+          // Rest of your payment logic...
+          const orderResponse = await fetch('http://localhost:8080/api/payments/create-order', {
+              method: 'POST',
+              credentials: 'include', // Include session cookie
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  amount: calculateTotalPrice() * 100,
+                  receipt: `booking_${Date.now()}`,
+                  notes: {
+                      userId: sessionData.user.email, // Send user identifier
+                      movieId,
+                      theaterId,
+                      showtime,
+                      seats: seats.join(','),
+                      date,
+                      foodItems: JSON.stringify(selectedFood)
+                  }
+              })
+          });
+          // ... rest of payment handling
+
+      } catch (error) {
+          setError(error.message);
+      }
   };
 
   // Loading state

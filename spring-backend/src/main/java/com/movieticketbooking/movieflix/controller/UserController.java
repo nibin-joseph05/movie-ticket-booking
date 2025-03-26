@@ -127,11 +127,31 @@ public class UserController {
     }
 
 
+    @GetMapping("/check-session")
+    public ResponseEntity<?> checkSession(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user != null) {
+            return ResponseEntity.ok(Map.of(
+                    "isLoggedIn", true,
+                    "user", Map.of(
+                            "firstName", user.getFirstName(),
+                            "lastName", user.getLastName(),
+                            "email", user.getEmail(),
+                            "phoneNumber", user.getPhoneNumber()
+                    )
+            ));
+        }
+        return ResponseEntity.ok(Map.of("isLoggedIn", false));
+    }
+
+
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpSession session) {
         session.invalidate(); // Destroy session
         return ResponseEntity.ok("Logged out successfully!");
     }
+
+
 
 
 
