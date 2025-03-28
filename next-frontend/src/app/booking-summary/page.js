@@ -19,8 +19,6 @@ export default function BookingSummaryPage() {
   const date = searchParams.get("date");
   const router = useRouter();
 
-
-
   // State for booking details
   const [bookingDetails, setBookingDetails] = useState(null);
   const [foodItems, setFoodItems] = useState([]);
@@ -32,16 +30,18 @@ export default function BookingSummaryPage() {
 
   // Fetch movie and theater details
   useEffect(() => {
-
     const foodParam = searchParams.get("food");
-      if (foodParam) {
-        try {
-          const decodedFood = JSON.parse(decodeURIComponent(foodParam));
+    if (foodParam) {
+      try {
+        const decodedFood = JSON.parse(decodeURIComponent(foodParam));
+        // Only update if the decoded food is different from current selection
+        if (JSON.stringify(decodedFood) !== JSON.stringify(selectedFood)) {
           setSelectedFood(decodedFood);
-        } catch (error) {
-          console.error("Error parsing food items from URL:", error);
         }
+      } catch (error) {
+        console.error("Error parsing food items from URL:", error);
       }
+    }
 
     const fetchData = async () => {
       try {
@@ -66,7 +66,7 @@ export default function BookingSummaryPage() {
     };
 
     fetchData();
-  }, [movieId, theaterId, searchParams]);
+  }, [movieId, theaterId, searchParams, selectedFood]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -151,7 +151,7 @@ export default function BookingSummaryPage() {
             showtime,
             category,
             seats,
-            price: calculateTotalPrice(),
+            price: price,
             date,
             food: selectedFood
           }));
@@ -162,7 +162,7 @@ export default function BookingSummaryPage() {
             showtime,
             category,
             seats: seats.join(','),
-            price: calculateTotalPrice().toFixed(2),
+            price: price.toFixed(2),
             date,
             food: JSON.stringify(selectedFood)
           }).toString())}`;
@@ -202,6 +202,7 @@ export default function BookingSummaryPage() {
             movieId,
             theaterId,
             showtime,
+            category,
             seats: seats.join(','),
             date,
             foodItems: JSON.stringify(selectedFood)
