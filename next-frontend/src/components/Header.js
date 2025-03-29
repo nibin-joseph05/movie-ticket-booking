@@ -29,7 +29,7 @@ export default function Header() {
 
       localStorage.removeItem("user");
       setIsLoggedIn(false);
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout failed", error);
     }

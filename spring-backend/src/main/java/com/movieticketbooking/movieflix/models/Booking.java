@@ -143,6 +143,10 @@ public class Booking {
         this.foodOrders = foodOrders;
     }
 
+    public Payment getPayment() {
+        return this.payment;
+    }
+
     // Helper methods for bidirectional relationships
     public void addSeat(BookedSeat seat) {
         seats.add(seat);
@@ -171,7 +175,7 @@ public class Booking {
         this.payment = payment;
     }
 
-    private double calculateTotalAmount() {
+    public double calculateTotalAmount() {
         double seatsTotal = seats.stream().mapToDouble(BookedSeat::getPrice).sum();
         double foodTotal = foodOrders.stream()
                 .mapToDouble(FoodOrder::getSubtotal)

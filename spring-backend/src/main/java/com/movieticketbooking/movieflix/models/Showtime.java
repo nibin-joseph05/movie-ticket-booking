@@ -4,8 +4,7 @@ import java.time.LocalDate;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import com.movieticketbooking.movieflix.models.Movie;
-import com.movieticketbooking.movieflix.models.Theatre;
+
 
 @Entity
 @Table(name = "showtimes")
@@ -17,13 +16,13 @@ public class Showtime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "movie_id", nullable = false)
-    private Movie movie;
+    @NotNull
+    @Column(name = "movie_id")
+    private Long movieId;
 
-    @ManyToOne
-    @JoinColumn(name = "theatre_id", referencedColumnName = "id", nullable = false)
-    private Theatre theatre;
+    @NotBlank
+    @Column(name = "theatre_id")
+    private String theatreId;
 
     @NotNull
     private LocalDate date;
@@ -81,21 +80,22 @@ public class Showtime {
         this.id = id;
     }
 
-    public Movie getMovie() {
-        return movie;
+    public Long getMovieId() {
+        return movieId;
     }
 
-    public void setMovie(Movie movie) {
-        this.movie = movie;
+    public void setMovieId(Long movieId) {
+        this.movieId = movieId;
     }
 
-    public Theatre getTheatre() {
-        return theatre;
+    public String getTheatreId() {
+        return theatreId;
     }
 
-    public void setTheatre(Theatre theatre) {
-        this.theatre = theatre;
+    public void setTheatreId(String theatreId) {
+        this.theatreId = theatreId;
     }
+
 
     public LocalDate getDate() {
         return date;

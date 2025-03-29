@@ -7,6 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.movieticketbooking.movieflix.models.User;
 
+import java.util.Map;
+
+
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
@@ -27,7 +31,20 @@ public class PaymentController {
     }
 
     @PostMapping("/verify-payment")
-    public ResponseEntity<?> verifyPayment(@RequestBody PaymentService.PaymentVerificationRequest verificationRequest) {
+    public ResponseEntity<?> verifyPayment(
+            @RequestBody PaymentService.PaymentVerificationRequest verificationRequest,
+            HttpSession session) {  // Add HttpSession parameter
+
+        // Get user from session
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "User not authenticated"));
+        }
+
+        // Set the user email in the verification request
+        verificationRequest.setUserEmail(user.getEmail());
+
         return paymentService.verifyAndCompletePayment(verificationRequest);
     }
 }

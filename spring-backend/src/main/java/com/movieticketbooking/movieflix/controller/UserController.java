@@ -126,7 +126,6 @@ public class UserController {
         return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
     }
 
-
     @GetMapping("/check-session")
     public ResponseEntity<?> checkSession(HttpSession session) {
         User user = (User) session.getAttribute("user");
@@ -144,15 +143,10 @@ public class UserController {
         return ResponseEntity.ok(Map.of("isLoggedIn", false));
     }
 
-
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpSession session) {
-        session.invalidate(); // Destroy session
+        session.invalidate();
         return ResponseEntity.ok("Logged out successfully!");
     }
-
-
-
-
 
 }

@@ -59,7 +59,6 @@ public class FoodController {
             @RequestParam String query) {
 
         try {
-            // Get all categories first
             List<String> categories = Arrays.asList(
                     "burgers", "pizzas", "sandwiches", "ice-cream",
                     "drinks", "bbqs", "best-foods", "breads"
@@ -67,7 +66,6 @@ public class FoodController {
 
             List<Map<String, Object>> results = new ArrayList<>();
 
-            // Search across all categories
             for (String category : categories) {
                 String apiUrl = FOOD_API_BASE_URL + "/" + category;
                 Object[] items = restTemplate.getForObject(apiUrl, Object[].class);
@@ -83,7 +81,6 @@ public class FoodController {
                 }
             }
 
-            // If no results found, return fallback items that match the query
             if (results.isEmpty()) {
                 List<Map<String, Object>> fallbackItems = getFallbackItems();
                 return ResponseEntity.ok(
@@ -98,7 +95,6 @@ public class FoodController {
 
         } catch (Exception e) {
             System.err.println("Error searching food items: " + e.getMessage());
-            // Return filtered fallback items
             List<Map<String, Object>> fallbackItems = getFallbackItems();
             return ResponseEntity.ok(
                     fallbackItems.stream()
@@ -110,30 +106,54 @@ public class FoodController {
     }
 
     private Map<String, Object> formatFoodItem(Map<String, Object> item) {
+        String id = item.get("id").toString();
+        String name = item.get("name").toString();
+
         return Map.of(
-                "id", item.get("id"),
-                "name", item.get("name"),
+                "id", id,
+                "name", name,
                 "description", item.get("dsc"),
-                "price", getRandomPrice(),
-                "calories", getRandomCalories(),
+                "price", (int) getStablePrice(id, name),
+                "calories", getLogicalCalories(name),
                 "allergens", "May contain allergens",
                 "image", item.get("img"),
                 "category", getCategoryFromItem(item)
         );
     }
 
-    private double getRandomPrice() {
-        // Generate random price between 100 and 500
-        return 100 + Math.random() * 400;
+    private double getStablePrice(String itemId, String itemName) {
+        // Use absolute value to ensure positive hash
+        int hash = Math.abs(itemId.hashCode() + itemName.hashCode());
+
+        String lowerName = itemName.toLowerCase();
+        if (lowerName.contains("burger")) return 199;
+        if (lowerName.contains("pizza")) return 299;
+        if (lowerName.contains("drink")) return 99;
+        if (lowerName.contains("ice cream")) return 149;
+        if (lowerName.contains("popcorn")) return 129;
+        if (lowerName.contains("fries")) return 89;
+        if (lowerName.contains("nachos")) return 179;
+
+        // Ensure minimum price of 50 and maximum of 500
+        return Math.max(50, 150 + (hash % 350));
     }
 
-    private int getRandomCalories() {
-        // Generate random calories between 200 and 800
-        return 200 + (int)(Math.random() * 600);
+    private int getLogicalCalories(String itemName) {
+        String lowerName = itemName.toLowerCase();
+
+        if (lowerName.contains("burger")) return 550;
+        if (lowerName.contains("pizza")) return 850;
+        if (lowerName.contains("salad")) return 250;
+        if (lowerName.contains("drink")) return 150;
+        if (lowerName.contains("ice cream")) return 350;
+        if (lowerName.contains("popcorn")) return 400;
+        if (lowerName.contains("fries")) return 300;
+        if (lowerName.contains("nachos")) return 500;
+
+        return 450;
     }
 
     private String getCategoryFromItem(Map<String, Object> item) {
-        // Extract category from API response if available
         if (item.containsKey("category")) {
             return item.get("category").toString();
         }
@@ -142,9 +162,9 @@ public class FoodController {
 
     private List<Map<String, Object>> getFallbackItems() {
         return Arrays.asList(
-                createFallbackItem("Popcorn Combo", "Large popcorn with drink", 350, 450),
-                createFallbackItem("Nachos", "Cheesy nachos with salsa", 300, 550),
-                createFallbackItem("Soft Drink", "Large carbonated beverage", 150, 250)
+                createFallbackItem("Popcorn Combo", "Large popcorn with drink", 129, 400),
+                createFallbackItem("Nachos", "Cheesy nachos with salsa", 179, 500),
+                createFallbackItem("Soft Drink", "Large carbonated beverage", 99, 150)
         );
     }
 
@@ -153,7 +173,7 @@ public class FoodController {
                 "id", UUID.randomUUID().toString(),
                 "name", name,
                 "description", desc,
-                "price", price,
+                "price", (int) price,
                 "calories", calories,
                 "allergens", "May contain allergens",
                 "image", "/images/" + name.toLowerCase().replace(" ", "-") + ".jpg",

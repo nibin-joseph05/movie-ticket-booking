@@ -1,10 +1,18 @@
 package com.movieticketbooking.movieflix.service;
 
+import com.movieticketbooking.movieflix.models.*;
+import com.movieticketbooking.movieflix.repository.*;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Order;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import jakarta.transaction.Transactional;
 import org.json.JSONObject;
 import org.json.JSONArray;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +28,27 @@ public class PaymentService {
 
     @Value("${razorpay.api.key.secret}")
     private String razorpayKeySecret;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ShowtimeRepository showtimeRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private BookedSeatRepository bookedSeatRepository;
+
+    @Autowired
+    private FoodItemRepository foodItemRepository;
+
+    @Autowired
+    private FoodOrderRepository foodOrderRepository;
 
     public ResponseEntity<?> createPaymentOrder(OrderRequest orderRequest, String userEmail) {
         try {
@@ -91,39 +120,177 @@ public class PaymentService {
         }
     }
 
+    private double getSeatPrice(Showtime showtime, String seatNumber) {
+        if (seatNumber.startsWith("S")) return showtime.getSilverPrice();
+        if (seatNumber.startsWith("G")) return showtime.getGoldPrice();
+        if (seatNumber.startsWith("P")) return showtime.getPlatinumPrice();
+        return showtime.getSilverPrice(); // default
+    }
+
+    @Transactional
     public ResponseEntity<?> verifyAndCompletePayment(PaymentVerificationRequest verificationRequest) {
         try {
-            // Generate expected signature
+            // 1. Verify payment signature
+            System.out.println("=== Starting payment verification ===");
+            System.out.println("Request data: " + new JSONObject(verificationRequest).toString());
+            System.out.println("Verifying signature...");
             String generatedSignature = HmacUtils.hmacSha256Hex(
                     razorpayKeySecret,
                     verificationRequest.getRazorpayOrderId() + "|" + verificationRequest.getRazorpayPaymentId()
             );
 
-            // Verify signature matches
-            if (generatedSignature.equals(verificationRequest.getRazorpaySignature())) {
-                // Payment successful - create booking record
-                // TODO: Add your booking creation logic here
-
-                JSONObject successResponse = new JSONObject();
-                successResponse.put("status", "success");
-                successResponse.put("orderId", verificationRequest.getRazorpayOrderId());
-                successResponse.put("paymentId", verificationRequest.getRazorpayPaymentId());
-                successResponse.put("redirectUrl", "/booking-success?orderId=" + verificationRequest.getRazorpayOrderId());
-
-                return ResponseEntity.ok(successResponse.toString());
-            } else {
-                // Signature verification failed
-                JSONObject failedResponse = new JSONObject();
-                failedResponse.put("status", "failed");
-                failedResponse.put("message", "Payment verification failed");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(failedResponse.toString());
+            if (!generatedSignature.equals(verificationRequest.getRazorpaySignature())) {
+                System.err.println("Signature verification failed");
+                throw new RuntimeException("Signature verification failed");
             }
 
+            System.out.println("Getting user email...");
+            String userEmail = verificationRequest.getUserEmail();
+            if (userEmail == null) {
+                System.out.println("Falling back to Razorpay notes for email");
+                // Fallback to Razorpay notes if needed
+                RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+                Order order = razorpay.orders.fetch(verificationRequest.getRazorpayOrderId());
+                JSONObject notes = order.get("notes");
+
+                userEmail = notes.optString("userId", null);
+                if (userEmail == null) {
+                    System.err.println("User email not found in request or notes");
+                    throw new RuntimeException("User email not found");
+                }
+            }
+
+            // 2. Get data from verification request (preferred) or Razorpay notes
+            RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+            Order order = razorpay.orders.fetch(verificationRequest.getRazorpayOrderId());
+            JSONObject notes = order.get("notes");
+
+
+            // Get showtime - prefer request but fallback to notes
+            System.out.println("Processing showtime...");
+            String showtimeId = verificationRequest.getShowtime();
+            if (showtimeId == null || showtimeId.isEmpty()) {
+                showtimeId = notes.getString("showtime");
+            }
+            System.out.println("Showtime ID: " + showtimeId);
+
+            // Get seats - prefer request but fallback to notes
+            String seatsData = verificationRequest.getSeats();
+            if (seatsData == null || seatsData.isEmpty()) {
+                seatsData = notes.optString("seats", "");
+            }
+
+            // Get food items - prefer request but fallback to notes
+            String foodItemsData = verificationRequest.getFoodItems();
+            if (foodItemsData == null || foodItemsData.isEmpty()) {
+                foodItemsData = notes.has("foodItems") ? notes.getJSONArray("foodItems").toString() : "[]";
+            }
+
+            // 3. Create and save the booking record
+            System.out.println("Creating booking...");
+            Booking booking = new Booking();
+            booking.setBookingReference(verificationRequest.getRazorpayOrderId());
+            booking.setPaymentStatus("CONFIRMED");
+            booking.setTotalAmount(verificationRequest.getAmount());
+            booking.setBookingTime(LocalDateTime.now());
+
+            // Set user
+            System.out.println("Setting user...");
+            booking.setUser(userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found")));
+
+            // Set showtime
+            System.out.println("Setting showtime...");
+            String showtimeTime = verificationRequest.getShowtime();
+            Long movieId = Long.parseLong(verificationRequest.getMovieId());
+            String theatreId = verificationRequest.getTheaterId();
+            LocalDate showtimeDate = LocalDate.parse(verificationRequest.getDate());
+
+            // Try to find existing showtime
+            Optional<Showtime> existingShowtime = showtimeRepository.findByMovieIdAndTheatreIdAndDateAndTime(
+                    movieId,
+                    theatreId,
+                    showtimeDate,
+                    showtimeTime
+            );
+
+            Showtime showtime;
+            if (existingShowtime.isEmpty()) {
+                System.out.println("Creating new showtime as none exists...");
+                showtime = new Showtime();
+
+                // Just store the IDs directly
+                showtime.setMovieId(movieId);
+                showtime.setTheatreId(theatreId);
+
+                showtime.setDate(showtimeDate);
+                showtime.setTime(showtimeTime);
+
+                // Set default values
+                showtime.setSilverPrice(140.0);
+                showtime.setGoldPrice(170.0);
+                showtime.setPlatinumPrice(210.0);
+                showtime.setSilverSeatsAvailable(40);
+                showtime.setGoldSeatsAvailable(20);
+                showtime.setPlatinumSeatsAvailable(10);
+
+                showtime = showtimeRepository.save(showtime);
+                System.out.println("New showtime created with ID: " + showtime.getId());
+            } else {
+                showtime = existingShowtime.get();
+            }
+
+            booking.setShowtime(showtime);
+            System.out.println("Saving booking...");
+            booking = bookingRepository.save(booking);
+
+            // 4. Create and save the payment record
+            Payment payment = new Payment();
+            payment.setAmount(booking.getTotalAmount());
+            payment.setCurrency("INR");
+            payment.setMethod(Payment.PaymentMethod.RAZORPAY);
+            payment.setStatus(Payment.PaymentStatus.SUCCESSFUL);
+            payment.setTransactionId(verificationRequest.getRazorpayPaymentId());
+            payment.setPaymentTime(LocalDateTime.now());
+            payment.setBooking(booking);
+            paymentRepository.save(payment);
+
+            // 5. Save booked seats
+            if (!seatsData.isEmpty()) {
+                String[] seatNumbers = seatsData.split(",");
+                for (String seatNumber : seatNumbers) {
+                    BookedSeat seat = new BookedSeat();
+                    seat.setSeatNumber(seatNumber.trim());
+                    seat.setPrice(getSeatPrice(showtime, seatNumber.trim()));
+                    seat.setBooking(booking);
+                    bookedSeatRepository.save(seat);
+                }
+            }
+
+            // 6. Save food orders
+            if (!foodItemsData.equals("[]")) {
+                JSONArray foodItems = new JSONArray(foodItemsData);
+                for (int i = 0; i < foodItems.length(); i++) {
+                    JSONObject item = foodItems.getJSONObject(i);
+                    FoodOrder foodOrder = new FoodOrder();
+                    foodOrder.setFoodItem(foodItemRepository.findById(Long.parseLong(item.getString("id")))
+                            .orElseThrow(() -> new RuntimeException("Food item not found")));
+                    foodOrder.setQuantity(item.getInt("quantity"));
+                    foodOrder.setPriceAtOrder(item.getDouble("price"));
+                    foodOrder.setBooking(booking);
+                    foodOrderRepository.save(foodOrder);
+                }
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "bookingId", booking.getId(),
+                    "redirectUrl", "/booking-success?bookingId=" + verificationRequest.getRazorpayOrderId()
+            ));
+
         } catch (Exception e) {
-            JSONObject errorResponse = new JSONObject();
-            errorResponse.put("status", "error");
-            errorResponse.put("message", "Error during payment verification: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse.toString());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Payment verification failed: " + e.getMessage()));
         }
     }
 
@@ -137,6 +304,7 @@ public class PaymentService {
         private List<String> seats;
         private String date;
         private List<FoodItemDTO> foodItems;
+
 
         // Getters and setters
         public double getAmount() { return amount; }
@@ -193,6 +361,15 @@ public class PaymentService {
         private String razorpayOrderId;
         private String razorpayPaymentId;
         private String razorpaySignature;
+        private String seats;
+        private String foodItems;
+        private String showtime;
+        private String date;
+        private String category;
+        private String movieId;
+        private String theaterId;
+        private double amount;
+        private String userEmail;
 
         // Getters and setters
         public String getRazorpayOrderId() { return razorpayOrderId; }
@@ -201,5 +378,77 @@ public class PaymentService {
         public void setRazorpayPaymentId(String razorpayPaymentId) { this.razorpayPaymentId = razorpayPaymentId; }
         public String getRazorpaySignature() { return razorpaySignature; }
         public void setRazorpaySignature(String razorpaySignature) { this.razorpaySignature = razorpaySignature; }
+
+        public String getSeats() {
+            return seats;
+        }
+
+        public void setSeats(String seats) {
+            this.seats = seats;
+        }
+
+        public String getFoodItems() {
+            return foodItems;
+        }
+
+        public void setFoodItems(String foodItems) {
+            this.foodItems = foodItems;
+        }
+
+        public String getShowtime() {
+            return showtime;
+        }
+
+        public void setShowtime(String showtime) {
+            this.showtime = showtime;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public void setDate(String date) {
+            this.date = date;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public void setCategory(String category) {
+            this.category = category;
+        }
+
+        public String getMovieId() {
+            return movieId;
+        }
+
+        public void setMovieId(String movieId) {
+            this.movieId = movieId;
+        }
+
+        public String getTheaterId() {
+            return theaterId;
+        }
+
+        public void setTheaterId(String theaterId) {
+            this.theaterId = theaterId;
+        }
+
+        public double getAmount() {
+            return amount;
+        }
+
+        public void setAmount(double amount) {
+            this.amount = amount;
+        }
+        public String getUserEmail() {
+            return userEmail;
+        }
+
+        public void setUserEmail(String userEmail) {
+            this.userEmail = userEmail;
+        }
     }
+
 }

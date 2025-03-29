@@ -25,12 +25,13 @@ public class BookedSeat {
     @Column(nullable = false)
     private double price;
 
-    public Movie getMovie() {
-        return booking.getShowtime().getMovie();
+    // Updated methods to match new Showtime structure
+    public Long getMovieId() {
+        return booking.getShowtime().getMovieId();
     }
 
-    public Theatre getTheatre() {
-        return booking.getShowtime().getTheatre();
+    public String getTheatreId() {
+        return booking.getShowtime().getTheatreId();
     }
 
     public LocalDate getShowDate() {
@@ -41,10 +42,20 @@ public class BookedSeat {
         return booking.getShowtime().getTime();
     }
 
+    // Helper method to get seat price based on category
+    public double getSeatPrice() {
+        return switch (category) {
+            case SILVER -> booking.getShowtime().getSilverPrice();
+            case GOLD -> booking.getShowtime().getGoldPrice();
+            case PLATINUM -> booking.getShowtime().getPlatinumPrice();
+        };
+    }
+
     public enum SeatCategory {
         SILVER, GOLD, PLATINUM
     }
 
+    // Getters and setters
     public Long getId() {
         return id;
     }

@@ -42,7 +42,7 @@ public class Payment {
 
     // Payment method enum
     public enum PaymentMethod {
-        CREDIT_CARD, DEBIT_CARD, UPI, NETBANKING, WALLET, CASH
+        RAZORPAY, CREDIT_CARD, DEBIT_CARD, UPI, NETBANKING, WALLET, CASH
     }
 
     // Constructors

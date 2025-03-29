@@ -27,46 +27,59 @@ export default function BookingSummaryPage() {
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Fetch movie and theater details
   useEffect(() => {
-    const foodParam = searchParams.get("food");
-    if (foodParam) {
-      try {
-        const decodedFood = JSON.parse(decodeURIComponent(foodParam));
-        // Only update if the decoded food is different from current selection
-        if (JSON.stringify(decodedFood) !== JSON.stringify(selectedFood)) {
-          setSelectedFood(decodedFood);
+
+    if (initialLoad) {
+        const foodParam = searchParams.get("food");
+        if (foodParam) {
+          try {
+            const decodedFood = JSON.parse(decodeURIComponent(foodParam));
+            setSelectedFood(decodedFood);
+          } catch (error) {
+            console.error("Error parsing food items:", error);
+          }
         }
-      } catch (error) {
-        console.error("Error parsing food items from URL:", error);
+        setInitialLoad(false);
       }
-    }
 
-    const fetchData = async () => {
-      try {
-        const [detailsResponse, foodResponse] = await Promise.all([
-          fetch(`http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`),
-          fetch(`http://localhost:8080/api/food/items`)
-        ]);
-
-        if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
-        if (!foodResponse.ok) throw new Error("Failed to fetch food options.");
-
-        const detailsData = await detailsResponse.json();
-        const foodData = await foodResponse.json();
-
-        setBookingDetails(detailsData);
-        setFoodItems(foodData);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
+    const foodParam = searchParams.get("food");
+      if (foodParam && (initialLoad || !isLoggedIn)) {
+        try {
+          const decodedFood = JSON.parse(decodeURIComponent(foodParam));
+          setSelectedFood(decodedFood);
+        } catch (error) {
+          console.error("Error parsing food items:", error);
+        }
+        if (initialLoad) setInitialLoad(false);
       }
-    };
+
+      const fetchData = async () => {
+        try {
+          const [detailsResponse, foodResponse] = await Promise.all([
+            fetch(`http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`),
+            fetch(`http://localhost:8080/api/food/items`)
+          ]);
+
+          if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
+          if (!foodResponse.ok) throw new Error("Failed to fetch food options.");
+
+          const detailsData = await detailsResponse.json();
+          const foodData = await foodResponse.json();
+
+          setBookingDetails(detailsData);
+          setFoodItems(foodData);
+        } catch (error) {
+          setError(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
     fetchData();
-  }, [movieId, theaterId, searchParams, selectedFood]);
+  }, [movieId, theaterId, initialLoad, isLoggedIn]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -111,7 +124,19 @@ export default function BookingSummaryPage() {
 
   // Handle back button click
   const handleBack = () => {
-    router.push(`/showtimes?movie=${movieId}&date=${date}`);
+    // Preserve all selections when going back
+    const params = new URLSearchParams({
+      movie: movieId,
+      theater: theaterId,
+      date,
+      showtime,
+      category,
+      seats: seats.join(','),
+      price: price.toFixed(2),
+      food: JSON.stringify(selectedFood)
+    });
+
+    router.push(`/showtimes?${params.toString()}`);
   };
 
   // Calculate total price
@@ -238,8 +263,11 @@ export default function BookingSummaryPage() {
         description: "Movie Ticket Booking",
         order_id: orderData.id,
         handler: async function(response) {
-          // 6. Verify payment on server
           try {
+            console.log("Payment successful, verifying...", {
+              seats: seats // Debug log
+            });
+
             const verificationResponse = await fetch('http://localhost:8080/api/payments/verify-payment', {
               method: 'POST',
               credentials: 'include',
@@ -249,19 +277,28 @@ export default function BookingSummaryPage() {
               body: JSON.stringify({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature
+                razorpaySignature: response.razorpay_signature,
+                seats: seats.join(','),
+                foodItems: selectedFood.length > 0 ? JSON.stringify(selectedFood) : null,
+                // Add these additional parameters
+                showtime: showtime,
+                date: date,
+                category: category,
+                movieId: movieId,
+                theaterId: theaterId,
+                amount: calculateTotalPrice(),
+                userEmail: user.email
               })
             });
 
             const verificationData = await verificationResponse.json();
-
             if (verificationData.status === 'success') {
-              // 7. Payment successful - redirect to success page
               window.location.href = `/booking-success?bookingId=${verificationData.orderId}`;
             } else {
               setError('Payment verification failed. Please contact support.');
             }
           } catch (error) {
+            console.error("Verification error:", error);
             setError('Error verifying payment: ' + error.message);
           }
         },
