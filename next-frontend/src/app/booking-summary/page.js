@@ -293,7 +293,7 @@ export default function BookingSummaryPage() {
 
             const verificationData = await verificationResponse.json();
             if (verificationData.status === 'success') {
-              window.location.href = `/booking-success?bookingId=${verificationData.orderId}`;
+              window.location.href = `/booking-success?bookingId=${verificationData.bookingId}`;
             } else {
               setError('Payment verification failed. Please contact support.');
             }

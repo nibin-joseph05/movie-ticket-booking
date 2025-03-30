@@ -33,7 +33,6 @@ public class Payment {
     @Column(nullable = false)
     private LocalDateTime paymentTime;
 
-    private String receiptNumber;
 
     // Payment status enum
     public enum PaymentStatus {
@@ -77,7 +76,6 @@ public class Payment {
     public void setMethod(PaymentMethod method) { this.method = method; }
     public LocalDateTime getPaymentTime() { return paymentTime; }
     public void setPaymentTime(LocalDateTime paymentTime) { this.paymentTime = paymentTime; }
-    public String getReceiptNumber() { return receiptNumber; }
-    public void setReceiptNumber(String receiptNumber) { this.receiptNumber = receiptNumber; }
+
 }
 
