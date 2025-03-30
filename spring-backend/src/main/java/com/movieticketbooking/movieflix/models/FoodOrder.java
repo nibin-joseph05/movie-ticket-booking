@@ -28,9 +28,6 @@ public class FoodOrder {
     @Column(nullable = false)
     private Double priceAtOrder; // Snapshot of price when ordered
 
-    @Column(length = 200)
-    private String specialInstructions;
-
     // Constructors
     public FoodOrder() {}
 
@@ -62,6 +59,5 @@ public class FoodOrder {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public Double getPriceAtOrder() { return priceAtOrder; }
     public void setPriceAtOrder(Double priceAtOrder) { this.priceAtOrder = priceAtOrder; }
-    public String getSpecialInstructions() { return specialInstructions; }
-    public void setSpecialInstructions(String specialInstructions) { this.specialInstructions = specialInstructions; }
+
 }

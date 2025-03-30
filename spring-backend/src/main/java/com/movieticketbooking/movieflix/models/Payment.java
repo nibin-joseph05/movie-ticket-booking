@@ -11,8 +11,8 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "booking_id", referencedColumnName = "id")
     private Booking booking;
 
     @Column(nullable = false)
@@ -57,11 +57,14 @@ public class Payment {
         this.amount = amount;
     }
 
+    public void setBooking(Booking booking) {
+        this.booking = booking;
+    }
+
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Booking getBooking() { return booking; }
-    public void setBooking(Booking booking) { this.booking = booking; }
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
     public double getAmount() { return amount; }

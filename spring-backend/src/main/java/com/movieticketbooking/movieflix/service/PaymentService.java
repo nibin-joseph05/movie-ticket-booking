@@ -241,10 +241,12 @@ public class PaymentService {
             }
 
             booking.setShowtime(showtime);
+
+
             System.out.println("Saving booking...");
             booking = bookingRepository.save(booking);
 
-            // 4. Create and save the payment record
+            // 2. Create and save payment
             Payment payment = new Payment();
             payment.setAmount(booking.getTotalAmount());
             payment.setCurrency("INR");
@@ -252,9 +254,16 @@ public class PaymentService {
             payment.setStatus(Payment.PaymentStatus.SUCCESSFUL);
             payment.setTransactionId(verificationRequest.getRazorpayPaymentId());
             payment.setPaymentTime(LocalDateTime.now());
+            System.out.println("came this much...");
             payment.setBooking(booking);
             System.out.println("Saving payment...");
-            paymentRepository.save(payment);
+            payment = paymentRepository.save(payment);
+
+            // 3. Update booking with payment reference
+            booking.setPayment(payment);
+            booking.setPaymentId(payment.getId().toString());
+            System.out.println("Saving booking with payment id...");
+            booking = bookingRepository.save(booking);
 
             // 5. Save booked seats
             if (!seatsData.isEmpty()) {

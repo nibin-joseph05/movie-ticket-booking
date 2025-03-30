@@ -29,13 +29,14 @@ public class Booking {
     @Column(nullable = false)
     private String paymentStatus;
 
+    @Column(name = "payment_id")
     private String paymentId;
-
-    @Column(nullable = false)
-    private String bookingReference;
 
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private Payment payment;
+
+    @Column(nullable = false)
+    private String bookingReference;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookedSeat> seats;
@@ -43,7 +44,8 @@ public class Booking {
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FoodOrder> foodOrders;
 
-    // Constructors
+
+
     public Booking() {
         this.bookingTime = LocalDateTime.now();
         this.paymentStatus = "PENDING";
@@ -165,14 +167,13 @@ public class Booking {
     }
 
     public void setPayment(Payment payment) {
-        if (payment == null) {
-            if (this.payment != null) {
-                this.payment.setBooking(null);
-            }
-        } else {
-            payment.setBooking(this);
-        }
         this.payment = payment;
+        if (payment != null) {
+            this.paymentId = payment.getId().toString();
+            payment.setBooking(this);
+        } else {
+            this.paymentId = null;
+        }
     }
 
     public double calculateTotalAmount() {
@@ -193,7 +194,5 @@ public class Booking {
                 ", bookingReference='" + bookingReference + '\'' +
                 '}';
     }
-
-
 
 }
