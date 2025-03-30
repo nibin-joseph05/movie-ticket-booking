@@ -253,16 +253,37 @@ public class PaymentService {
             payment.setTransactionId(verificationRequest.getRazorpayPaymentId());
             payment.setPaymentTime(LocalDateTime.now());
             payment.setBooking(booking);
+            System.out.println("Saving payment...");
             paymentRepository.save(payment);
 
             // 5. Save booked seats
             if (!seatsData.isEmpty()) {
                 String[] seatNumbers = seatsData.split(",");
+                String category = verificationRequest.getCategory(); // Get category from request
+
                 for (String seatNumber : seatNumbers) {
                     BookedSeat seat = new BookedSeat();
                     seat.setSeatNumber(seatNumber.trim());
                     seat.setPrice(getSeatPrice(showtime, seatNumber.trim()));
                     seat.setBooking(booking);
+
+                    // Set the category based on request or seat number
+                    if (category != null && !category.isEmpty()) {
+                        seat.setCategory(BookedSeat.SeatCategory.valueOf(category.toUpperCase()));
+                    } else {
+                        // Fallback to determining category from seat number
+                        if (seatNumber.trim().startsWith("S")) {
+                            seat.setCategory(BookedSeat.SeatCategory.SILVER);
+                        } else if (seatNumber.trim().startsWith("G")) {
+                            seat.setCategory(BookedSeat.SeatCategory.GOLD);
+                        } else if (seatNumber.trim().startsWith("P")) {
+                            seat.setCategory(BookedSeat.SeatCategory.PLATINUM);
+                        } else {
+                            seat.setCategory(BookedSeat.SeatCategory.SILVER); // default
+                        }
+                    }
+
+                    System.out.println("Saving Seats...");
                     bookedSeatRepository.save(seat);
                 }
             }
@@ -272,12 +293,43 @@ public class PaymentService {
                 JSONArray foodItems = new JSONArray(foodItemsData);
                 for (int i = 0; i < foodItems.length(); i++) {
                     JSONObject item = foodItems.getJSONObject(i);
+
+                    // First try to find food item by name (since ID might not exist in DB)
+                    String foodName = item.getString("name");
+                    Optional<FoodItem> existingFoodItem = foodItemRepository.findByName(foodName);
+                    FoodItem foodItem;
+
+                    if (existingFoodItem.isPresent()) {
+                        foodItem = existingFoodItem.get();
+                    } else {
+                        // Create new food item if it doesn't exist
+                        foodItem = new FoodItem();
+                        foodItem.setName(foodName);
+                        foodItem.setDescription(item.getString("description"));
+                        foodItem.setPrice(item.getDouble("price"));
+                        foodItem.setImageUrl(item.getString("image"));
+                        foodItem.setIsAvailable(true);
+
+                        // Handle category - convert from string to enum
+                        try {
+                            foodItem.setCategory(FoodItem.FoodCategory.valueOf(
+                                    item.getString("category").toUpperCase()));
+                        } catch (IllegalArgumentException e) {
+                            foodItem.setCategory(FoodItem.FoodCategory.SNACK); // default
+                        }
+
+                        foodItem = foodItemRepository.save(foodItem);
+                        System.out.println("Created new food item: " + foodItem.getName());
+                    }
+
+                    // Create food order
                     FoodOrder foodOrder = new FoodOrder();
-                    foodOrder.setFoodItem(foodItemRepository.findById(Long.parseLong(item.getString("id")))
-                            .orElseThrow(() -> new RuntimeException("Food item not found")));
+                    foodOrder.setFoodItem(foodItem);
                     foodOrder.setQuantity(item.getInt("quantity"));
                     foodOrder.setPriceAtOrder(item.getDouble("price"));
                     foodOrder.setBooking(booking);
+
+                    System.out.println("Saving food order for: " + foodItem.getName());
                     foodOrderRepository.save(foodOrder);
                 }
             }

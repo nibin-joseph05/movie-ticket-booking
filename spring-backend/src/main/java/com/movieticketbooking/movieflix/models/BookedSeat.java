@@ -42,13 +42,11 @@ public class BookedSeat {
         return booking.getShowtime().getTime();
     }
 
-    // Helper method to get seat price based on category
-    public double getSeatPrice() {
-        return switch (category) {
-            case SILVER -> booking.getShowtime().getSilverPrice();
-            case GOLD -> booking.getShowtime().getGoldPrice();
-            case PLATINUM -> booking.getShowtime().getPlatinumPrice();
-        };
+    private double getSeatPrice(Showtime showtime, String seatNumber) {
+        if (seatNumber.startsWith("S")) return showtime.getSilverPrice();
+        if (seatNumber.startsWith("G")) return showtime.getGoldPrice();
+        if (seatNumber.startsWith("P")) return showtime.getPlatinumPrice();
+        return showtime.getSilverPrice(); // default
     }
 
     public enum SeatCategory {
