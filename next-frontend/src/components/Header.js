@@ -127,7 +127,7 @@ export default function Header() {
           <a href="#" className="hover:text-red-500 transition-all duration-200">
            My Account
           </a>
-          <a href="/my-orders" className="hover:text-red-500 transition-all duration-200">
+          <a href="/my-bookings" className="hover:text-red-500 transition-all duration-200">
             My Bookings
           </a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>

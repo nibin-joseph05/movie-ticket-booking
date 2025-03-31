@@ -347,7 +347,7 @@ export default function MyOrders() {
 
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Link
-                          href={`/booking/${booking.reference}`}
+                          href={`/my-bookings/${booking.reference}`}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg flex items-center ${
                             isExpired
                               ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:shadow-gray-800/10 cursor-not-allowed'
