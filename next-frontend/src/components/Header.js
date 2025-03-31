@@ -125,9 +125,11 @@ export default function Header() {
             Movies
           </a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">
-            Stream
+           My Account
           </a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">Events</a>
+          <a href="/my-orders" className="hover:text-red-500 transition-all duration-200">
+            My Bookings
+          </a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>
           <a href="#" className="hover:text-red-500 transition-all duration-200">Sports</a>
         </nav>

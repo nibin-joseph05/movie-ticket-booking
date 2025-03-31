@@ -133,6 +133,7 @@ public class UserController {
             return ResponseEntity.ok(Map.of(
                     "isLoggedIn", true,
                     "user", Map.of(
+                            "id", user.getUserId(),
                             "firstName", user.getFirstName(),
                             "lastName", user.getLastName(),
                             "email", user.getEmail(),

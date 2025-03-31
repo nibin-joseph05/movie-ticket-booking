@@ -10,6 +10,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 
 
@@ -109,6 +115,9 @@ public class BookingController {
             List<Booking> bookings = bookingRepository.findByUserId(userId);
             List<Map<String, Object>> bookingResponses = new ArrayList<>();
 
+            // Create a formatter for AM/PM time format
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.US);
+
             for (Booking booking : bookings) {
                 Showtime showtime = showtimeRepository.findById(booking.getShowtime().getId())
                         .orElse(null);
@@ -117,29 +126,55 @@ public class BookingController {
                     Map<String, Object> movieDetails = fetchMovieDetails(showtime.getMovieId().toString());
 
                     if (movieDetails != null) {
-                        bookingResponses.add(Map.of(
-                                "id", booking.getId(),
-                                "reference", booking.getBookingReference(),
-                                "movieTitle", movieDetails.get("title"),
-                                "posterPath", buildPosterPath(movieDetails.get("poster_path")),
-                                "showtime", showtime.getTime(),
-                                "date", showtime.getDate().toString(),
-                                "totalAmount", booking.getTotalAmount(),
-                                "status", booking.getPaymentStatus()
-                        ));
+                        // Format the date properly
+                        String formattedDate = showtime.getDate().toString();
+
+                        // Parse the time using the formatter
+                        LocalTime showTime = LocalTime.parse(showtime.getTime(), timeFormatter);
+                        LocalDateTime showDateTime = showtime.getDate().atTime(showTime);
+                        LocalDateTime now = LocalDateTime.now();
+
+                        boolean isExpired = showDateTime.isBefore(now);
+                        long hoursRemaining = ChronoUnit.HOURS.between(now, showDateTime);
+                        long minutesRemaining = ChronoUnit.MINUTES.between(now, showDateTime) % 60;
+
+                        String timeStatus = isExpired ? "Expired" :
+                                (hoursRemaining > 0 ? hoursRemaining + "h " + minutesRemaining + "m remaining" :
+                                        minutesRemaining + "m remaining");
+
+                        // Create booking map using HashMap
+                        Map<String, Object> bookingMap = new HashMap<>();
+                        bookingMap.put("id", booking.getId());
+                        bookingMap.put("reference", booking.getBookingReference());
+                        bookingMap.put("movieTitle", movieDetails.get("title"));
+                        bookingMap.put("posterPath", buildPosterPath(movieDetails.get("poster_path")));
+                        bookingMap.put("showtime", showtime.getTime()); // Keep original format
+                        bookingMap.put("date", formattedDate);
+                        bookingMap.put("totalAmount", booking.getTotalAmount());
+                        bookingMap.put("status", booking.getPaymentStatus());
+                        bookingMap.put("rating", movieDetails.getOrDefault("vote_average", "N/A"));
+                        bookingMap.put("genres", extractGenres(movieDetails));
+                        bookingMap.put("isExpired", isExpired);
+                        bookingMap.put("timeStatus", timeStatus);
+                        bookingMap.put("showDateTime", showDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+
+                        bookingResponses.add(bookingMap);
                     }
                 }
             }
 
-            return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "data", bookingResponses
-            ));
+            // Create response map
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("data", bookingResponses);
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                    Map.of("status", "error", "message", "Failed to fetch user bookings: " + e.getMessage())
-            );
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", "Failed to fetch user bookings: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
         }
     }
 

@@ -8,12 +8,25 @@ import axios from "axios";
 export default function Home() {
   const [movies, setMovies] = useState([]);
   const [userName, setUserName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user && user.firstName) {
-      setUserName(user.firstName);
-    }
+    const checkUser = () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (user && user.firstName) {
+        setUserName(user.firstName);
+        setIsLoggedIn(true);
+      } else {
+        setUserName("");
+        setIsLoggedIn(false);
+      }
+    };
+
+    // Check user on initial load
+    checkUser();
+
+    // Add event listener for storage changes
+    window.addEventListener('storage', checkUser);
 
     const fetchMovies = async () => {
       try {
@@ -27,17 +40,42 @@ export default function Home() {
     };
 
     fetchMovies();
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener('storage', checkUser);
+    };
+  }, []);
+
+  // Add this to handle logout from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'user') {
+        const user = JSON.parse(e.newValue);
+        if (!user) {
+          setUserName("");
+          setIsLoggedIn(false);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
-      <Header />
+      <Header onLogout={() => {
+        setUserName("");
+        setIsLoggedIn(false);
+      }} />
 
-      {userName && (
+      {isLoggedIn && userName && (
         <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
           🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
         </div>
       )}
+
 
       <section className="relative w-full h-[60vh] flex items-center justify-center">
         <img
