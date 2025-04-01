@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { FiClock, FiCalendar, FiMapPin, FiFilm, FiDollarSign, FiUser, FiCreditCard, FiShoppingBag, FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import TheatreInfoPopup from "@/components/theatre-map";
+import TicketDownloadButton from "@/components/TicketDownloadButton";
 
 export default function BookingDetails({ params }) {
   const [booking, setBooking] = useState(null);
@@ -574,36 +575,41 @@ export default function BookingDetails({ params }) {
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-6 space-y-4">
                     {!booking.isExpired && (
                       <>
+                        <div className="w-full">
+                          <TicketDownloadButton
+                            bookingRef={booking.reference}
+                            className="w-full py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-red-500/40 active:scale-[0.97] flex items-center justify-center gap-2 transform hover:-translate-y-1"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H9m6 0l-3 3m3-3l-3-3" />
+                            </svg>
+                            Download Ticket
+                          </TicketDownloadButton>
+                        </div>
+
                         <button
-                          className="w-full py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white rounded-lg transition-all duration-300 shadow-lg hover:shadow-red-500/30 active:scale-[0.98] flex items-center justify-center"
-                          onClick={() => {
-                            alert('Download ticket functionality will be implemented here');
-                          }}
-                        >
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                          Download Ticket
-                        </button>
-                        <button
-                          className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-gray-800/30 active:scale-[0.98] flex items-center justify-center"
+                          className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-gray-800/40 active:scale-[0.97] flex items-center justify-center gap-2 transform hover:-translate-y-1 hover:ring-2 hover:ring-gray-600"
                           onClick={() => {
                             alert('Cancel booking functionality will be implemented here');
                           }}
                         >
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
                           </svg>
                           Cancel Booking
                         </button>
                       </>
                     )}
-
-
                   </div>
+
                 </div>
               </div>
             </div>

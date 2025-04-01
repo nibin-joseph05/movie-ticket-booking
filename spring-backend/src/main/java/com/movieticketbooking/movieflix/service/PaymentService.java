@@ -5,10 +5,12 @@ import com.movieticketbooking.movieflix.repository.*;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Order;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
 import jakarta.transaction.Transactional;
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.HmacUtils;
 
 @Service
@@ -28,6 +31,21 @@ public class PaymentService {
 
     @Value("${razorpay.api.key.secret}")
     private String razorpayKeySecret;
+
+    @Autowired
+    private TicketService ticketService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Value("${tmdb.api.key}")
+    private String tmdbApiKey;
+
+    @Value("${google.api.key}")
+    private String googleApiKey;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Autowired
     private PaymentRepository paymentRepository;
@@ -343,6 +361,37 @@ public class PaymentService {
                 }
             }
 
+            try {
+
+                List<BookedSeat> bookedSeats = bookedSeatRepository.findByBookingId(booking.getId());
+                List<FoodOrder> foodOrders = foodOrderRepository.findByBookingId(booking.getId());
+
+                Map<String, Object> movieDetails = fetchMovieDetails(showtime.getMovieId().toString());
+                Map<String, Object> theaterDetails = fetchTheaterDetails(showtime.getTheatreId());
+
+                byte[] ticketPdf = ticketService.generateTicketPdf(
+                        booking, showtime, bookedSeats, foodOrders, movieDetails, theaterDetails);
+
+                String emailContent = "<p>Thank you for your booking! Your ticket details:</p>"
+                        + "<p><strong>Movie:</strong> " + movieDetails.get("title") + "</p>"
+                        + "<p><strong>Theater:</strong> " + theaterDetails.get("name") + "</p>"
+                        + "<p><strong>Date:</strong> " + showtime.getDate() + "</p>"
+                        + "<p><strong>Time:</strong> " + showtime.getTime() + "</p>"
+                        + "<p><strong>Seats:</strong> " + bookedSeats.stream()
+                        .map(BookedSeat::getSeatNumber)
+                        .collect(Collectors.joining(", ")) + "</p>";
+
+                emailService.sendTicketEmail(
+                        userEmail,
+                        "Your MovieFlix Ticket #" + booking.getBookingReference(),
+                        emailContent,
+                        ticketPdf
+                );
+            } catch (Exception e) {
+                // Log error but don't fail the payment
+                System.err.println("Failed to generate/send ticket: " + e.getMessage());
+            }
+
             return ResponseEntity.ok(Map.of(
                     "status", "success",
                     "bookingId", booking.getId(),
@@ -510,6 +559,35 @@ public class PaymentService {
         public void setUserEmail(String userEmail) {
             this.userEmail = userEmail;
         }
+    }
+
+    private Map<String, Object> fetchMovieDetails(String movieId) {
+        String movieUrl = String.format(
+                "https://api.themoviedb.org/3/movie/%s?api_key=%s&language=en-US",
+                movieId, tmdbApiKey);
+        return restTemplate.getForObject(movieUrl, Map.class);
+    }
+
+    private Map<String, Object> fetchTheaterDetails(String theaterId) {
+        String theaterUrl = String.format(
+                "https://places.googleapis.com/v1/places/%s?key=%s",
+                theaterId, googleApiKey);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Goog-FieldMask", "displayName,formattedAddress,rating");
+        return restTemplate.exchange(
+                theaterUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                Map.class
+        ).getBody();
+    }
+
+    private String extractTheaterName(Map<String, Object> theaterDetails) {
+        if (theaterDetails.get("displayName") == null) {
+            return "Unknown Theatre";
+        }
+        return ((Map<String, Object>) theaterDetails.get("displayName")).get("text").toString();
     }
 
 }

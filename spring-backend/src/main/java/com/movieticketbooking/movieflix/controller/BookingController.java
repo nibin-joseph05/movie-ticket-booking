@@ -2,13 +2,14 @@ package com.movieticketbooking.movieflix.controller;
 
 import com.movieticketbooking.movieflix.models.*;
 import com.movieticketbooking.movieflix.repository.*;
+import com.movieticketbooking.movieflix.service.TicketService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -29,6 +30,11 @@ public class BookingController {
 
     @Value("${google.api.key}")
     private String googleApiKey;
+
+    private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
+
+    @Autowired
+    private TicketService ticketService;
 
     private final RestTemplate restTemplate;
     private final BookingRepository bookingRepository;
@@ -317,4 +323,42 @@ public class BookingController {
         }
         return ((Map<String, Object>) theaterDetails.get("displayName")).get("text").toString();
     }
+
+
+    @GetMapping("/{bookingRef}/ticket")
+    public ResponseEntity<byte[]> downloadTicket(@PathVariable String bookingRef) {
+        try {
+            // Get booking details
+            Booking booking = bookingRepository.findByBookingReference(bookingRef)
+                    .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+            Showtime showtime = showtimeRepository.findById(booking.getShowtime().getId())
+                    .orElseThrow(() -> new RuntimeException("Showtime not found"));
+
+            List<BookedSeat> seats = bookedSeatRepository.findByBookingId(booking.getId());
+            List<FoodOrder> foodOrders = foodOrderRepository.findByBookingId(booking.getId());
+
+            Map<String, Object> movieDetails = fetchMovieDetails(showtime.getMovieId().toString());
+            Map<String, Object> theaterDetails = fetchTheaterDetails(showtime.getTheatreId());
+
+            // Generate PDF
+            byte[] ticketPdf = ticketService.generateTicketPdf(
+                    booking, showtime, seats, foodOrders, movieDetails, theaterDetails);
+
+            // Return PDF for download
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment",
+                    "ticket_" + booking.getBookingReference() + ".pdf");
+
+            return new ResponseEntity<>(ticketPdf, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            logger.error("Error generating ticket for booking " + bookingRef, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(("Error generating ticket: " + e.getMessage()).getBytes());
+        }
+    }
+
+
 }
