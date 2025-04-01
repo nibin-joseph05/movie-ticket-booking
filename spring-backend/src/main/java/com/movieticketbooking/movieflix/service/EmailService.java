@@ -96,7 +96,7 @@ public class EmailService {
                     + "</div>"
                     + "</div>"
                     + "<p style='text-align: center;'>"
-                    + "<a href='#' class='button'>View Booking Details</a>"
+//                    + "<a href='' class='button'>View Booking Details</a>"
                     + "</p>"
                     + "</div>"
                     + "<div class='footer'>"
