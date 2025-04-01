@@ -103,10 +103,10 @@ export default function BookingSuccess() {
               <p className="mt-3 text-white/90">
                 Your ticket has been successfully booked. You can download it anytime from{' '}
                 <span
-                  onClick={() => router.push('/my-orders')}
+                  onClick={() => router.push('/my-bookings')}
                   className="underline cursor-pointer hover:text-yellow-300 transition-colors font-medium"
                 >
-                  My Orders
+                  My Bookings
                 </span>
               </p>
             </div>

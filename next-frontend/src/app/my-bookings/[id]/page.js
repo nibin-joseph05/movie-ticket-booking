@@ -16,6 +16,38 @@ export default function BookingDetails({ params }) {
   const router = useRouter();
   const [timeLoading, setTimeLoading] = useState(true);
 
+  const parseTimeString = (timeString) => {
+    // Parse time string in "h:mm a" format (e.g., "2:30 PM")
+    const [time, period] = timeString.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+
+    // Convert to 24-hour format
+    let hours24 = hours;
+    if (period === 'PM' && hours < 12) {
+      hours24 += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours24 = 0;
+    }
+
+    return { hours: hours24, minutes };
+  };
+
+  const calculateTimeLeft = (showDateTime) => {
+    const now = new Date();
+    const diff = showDateTime - now;
+
+    if (diff <= 0) {
+      return null; // Show has already started
+    }
+
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+    return {
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+      totalMinutes: totalMinutes
+    };
+  };
+
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
@@ -29,24 +61,22 @@ export default function BookingDetails({ params }) {
         if (response.data.status === 'success') {
           const apiData = response.data.data;
           const now = new Date();
-          const showDateTime = new Date(`${apiData.booking.date}T${apiData.booking.time}`);
+
+          // Parse the date and time from the API response
+          const dateParts = apiData.booking.date.split('-');
+          const { hours, minutes } = parseTimeString(apiData.booking.time);
+
+          // Create showDateTime in local timezone
+          const showDateTime = new Date(
+            dateParts[0],
+            dateParts[1] - 1,
+            dateParts[2],
+            hours,
+            minutes
+          );
+
           const isExpired = showDateTime < now;
-          const timeUntilShow = showDateTime - now;
-
-          let timeStatus = {
-            hours: 0,
-            minutes: 0,
-            totalMinutes: 0
-          };
-
-          if (!isExpired) {
-            const totalMinutes = Math.floor(timeUntilShow / (1000 * 60));
-            timeStatus = {
-              hours: Math.floor(totalMinutes / 60),
-              minutes: totalMinutes % 60,
-              totalMinutes: totalMinutes
-            };
-          }
+          const timeStatus = calculateTimeLeft(showDateTime);
 
           // Calculate ticket and food totals
           const ticketTotal = apiData.booking.totalAmount - (apiData.foodItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0);
@@ -61,7 +91,7 @@ export default function BookingDetails({ params }) {
             movieDescription: apiData.movie.synopsis,
             theaterName: apiData.theater.name,
             theaterAddress: apiData.theater.address,
-            theater: apiData.theater, // Full theater object for map component
+            theater: apiData.theater,
             seats: apiData.booking.seats?.map(seat => ({
               row: seat.charAt(0),
               number: seat.substring(1)
@@ -75,14 +105,9 @@ export default function BookingDetails({ params }) {
               month: 'long',
               day: 'numeric'
             }),
-            formattedTime: apiData.booking.time.includes('M')
-              ? apiData.booking.time
-              : new Date(`1970-01-01T${apiData.booking.time}`).toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }),
+            formattedTime: apiData.booking.time, // Use the original formatted time
             subtotal: apiData.booking.totalAmount,
-            taxes: 0, // Assuming taxes are included in the total
+            taxes: 0,
             totalAmount: apiData.booking.totalAmount,
             ticketPrice
           };
@@ -104,6 +129,7 @@ export default function BookingDetails({ params }) {
   }, [params]);
 
   // Update time left counter
+  // Update time left counter
   useEffect(() => {
     if (!booking) {
       setTimeLoading(false);
@@ -115,7 +141,7 @@ export default function BookingDetails({ params }) {
       const diff = booking.showDateTime - now;
 
       if (diff <= 0) {
-        setBooking(prev => ({ ...prev, isExpired: true }));
+        // Instead of updating booking, just set timeLeft to null
         setTimeLeft(null);
       } else {
         const totalMinutes = Math.floor(diff / (1000 * 60));
@@ -131,14 +157,12 @@ export default function BookingDetails({ params }) {
     // Initial calculation
     updateTimeLeft();
 
-    // Only set up timer if booking is not expired
-    if (!booking.isExpired) {
-      const timer = setInterval(updateTimeLeft, 60000); // Update every minute
+    // Only set up timer if show hasn't started
+    if (booking.showDateTime > new Date()) {
+      const timer = setInterval(updateTimeLeft, 60000);
       return () => clearInterval(timer);
     }
   }, [booking]);
-
-
 
   if (loading) {
     return (
@@ -578,19 +602,7 @@ export default function BookingDetails({ params }) {
                       </>
                     )}
 
-                    {booking.isExpired && (
-                      <button
-                        className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 hover:shadow-lg hover:shadow-gray-800/30 active:scale-[0.98] flex items-center justify-center"
-                        onClick={() => {
-                          alert('Rate movie functionality will be implemented here');
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
-                        Rate This Movie
-                      </button>
-                    )}
+
                   </div>
                 </div>
               </div>
