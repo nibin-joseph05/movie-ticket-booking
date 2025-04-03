@@ -36,7 +36,8 @@ public class Payment {
 
     // Payment status enum
     public enum PaymentStatus {
-        PENDING, SUCCESSFUL, FAILED, REFUNDED, PARTIALLY_REFUNDED
+        PENDING, CONFIRMED, SUCCESSFUL, FAILED, CANCELLED,
+        REFUND_PENDING, REFUNDED, PARTIALLY_REFUNDED
     }
 
     // Payment method enum

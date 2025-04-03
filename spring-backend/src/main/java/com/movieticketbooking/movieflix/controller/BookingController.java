@@ -18,6 +18,7 @@ import java.time.ZoneId;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
+import java.time.format.DateTimeParseException;
 
 
 @RestController
@@ -357,6 +358,122 @@ public class BookingController {
             logger.error("Error generating ticket for booking " + bookingRef, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(("Error generating ticket: " + e.getMessage()).getBytes());
+        }
+    }
+
+    @PostMapping("/{bookingRef}/cancel")
+    public ResponseEntity<?> cancelBooking(@PathVariable String bookingRef) {
+        try {
+            // 1. Find the booking
+            Optional<Booking> bookingOpt = bookingRepository.findByBookingReference(bookingRef);
+            if (bookingOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "BOOKING_NOT_FOUND",
+                                "message", "No booking found with reference: " + bookingRef
+                        )
+                );
+            }
+
+            Booking booking = bookingOpt.get();
+
+            // 2. Check booking status - note we use string literals to match database values
+            if ("CANCELLED".equals(booking.getPaymentStatus())) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "ALREADY_CANCELLED",
+                                "message", "This booking was already cancelled"
+                        )
+                );
+            }
+
+            if ("FAILED".equals(booking.getPaymentStatus())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "PAYMENT_FAILED",
+                                "message", "Cannot cancel a failed payment booking"
+                        )
+                );
+            }
+
+            // 3. Validate showtime
+            Optional<Showtime> showtimeOpt = showtimeRepository.findById(booking.getShowtime().getId());
+            if (showtimeOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "SHOWTIME_NOT_FOUND",
+                                "message", "Associated showtime no longer exists"
+                        )
+                );
+            }
+
+            Showtime showtime = showtimeOpt.get();
+
+            // Parse showtime with proper error handling
+            LocalTime showTime;
+            try {
+                showTime = LocalTime.parse(showtime.getTime(), DateTimeFormatter.ofPattern("h:mm a", Locale.US));
+            } catch (DateTimeParseException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "INVALID_SHOWTIME_FORMAT",
+                                "message", "Showtime format is invalid"
+                        )
+                );
+            }
+
+            // Check showtime with timezone awareness
+            LocalDateTime showDateTime = showtime.getDate().atTime(showTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime();
+
+            if (showDateTime.isBefore(LocalDateTime.now())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                        Map.of(
+                                "status", "error",
+                                "code", "SHOWTIME_PASSED",
+                                "message", "Cannot cancel booking after showtime has started",
+                                "showtime", showDateTime.toString()
+                        )
+                );
+            }
+
+            // 4. Process cancellation - use string literal to match database
+            booking.setPaymentStatus("CANCELLED");
+            bookingRepository.save(booking);
+
+            // 5. Update payment status if exists
+            Payment payment = paymentRepository.findByBookingId(booking.getId());
+            if (payment != null && "SUCCESSFUL".equals(payment.getStatus())) {
+                payment.setStatus(Payment.PaymentStatus.REFUND_PENDING); // Use enum here
+                paymentRepository.save(payment);
+            }
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "status", "success",
+                            "message", "Booking cancelled successfully",
+                            "booking_reference", booking.getBookingReference(),
+                            "refund_status", payment != null ? payment.getStatus().name() : "no_payment",
+                            "cancellation_time", LocalDateTime.now().toString()
+                    )
+            );
+
+        } catch (Exception e) {
+            logger.error("System error cancelling booking {}: {}", bookingRef, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of(
+                            "status", "error",
+                            "code", "SYSTEM_ERROR",
+                            "message", "An unexpected error occurred",
+                            "details", e.getMessage()
+                    )
+            );
         }
     }
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { FiClock, FiCalendar, FiX, FiCheck, FiDownload, FiEye, FiAlertTriangle } from 'react-icons/fi';
 
 export default function MyOrders() {
   const [bookings, setBookings] = useState([]);
@@ -113,12 +114,14 @@ export default function MyOrders() {
             const now = new Date();
             const isExpired = showDateTime < now;
             const timeStatus = calculateTimeLeft(showDateTime);
+            const isCancelled = booking.status === 'CANCELLED';
 
             return {
               ...booking,
               isExpired,
+              isCancelled,
               showDateTime,
-              timeStatus // Store the time status object
+              timeStatus
             };
           }).filter(booking => booking !== null);
 
@@ -144,7 +147,7 @@ export default function MyOrders() {
     const timer = setInterval(() => {
       setBookings(prevBookings =>
         prevBookings.map(booking => {
-          if (booking.isExpired) return booking;
+          if (booking.isExpired || booking.isCancelled) return booking;
 
           const now = new Date();
           const isExpired = booking.showDateTime < now;
@@ -168,7 +171,6 @@ export default function MyOrders() {
   };
 
   const formatTime = (timeString) => {
-    // Format time string to include AM/PM if not already present
     if (!timeString.match(/[AP]M$/i)) {
       const [hours, minutes] = timeString.split(':');
       const hourNum = parseInt(hours, 10);
@@ -177,6 +179,31 @@ export default function MyOrders() {
       return `${displayHour}:${minutes} ${period}`;
     }
     return timeString;
+  };
+
+  const handleCancelBooking = async (bookingRef) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:8080/booking/${bookingRef}/cancel`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data.status === 'success') {
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking.reference === bookingRef
+              ? { ...booking, status: 'CANCELLED', isCancelled: true }
+              : booking
+          )
+        );
+      } else {
+        alert(response.data.message || 'Failed to cancel booking');
+      }
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+      alert(err.response?.data?.message || 'Failed to cancel booking');
+    }
   };
 
   if (loading) {
@@ -201,9 +228,7 @@ export default function MyOrders() {
         <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
           <div className="bg-[#1e1e2e]/80 backdrop-blur-sm p-8 rounded-xl border border-red-900/50 max-w-md w-full">
             <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <FiAlertTriangle className="w-8 h-8 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold text-red-500 mb-2">Error Loading Bookings</h2>
             <p className="text-gray-300 mb-6">{error}</p>
@@ -263,42 +288,60 @@ export default function MyOrders() {
             {bookings.map((booking) => {
               const formattedShowtime = formatTime(booking.showtime);
               const isExpired = booking.isExpired;
+              const isCancelled = booking.isCancelled;
               const timeStatus = booking.timeStatus;
 
               return (
                 <div
                   key={booking.id}
                   className={`bg-[#1e1e2e]/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border transition-all duration-300 transform hover:scale-[1.005] ${
-                    isExpired
-                      ? 'border-gray-700 hover:border-gray-600 bg-gray-900/30'
-                      : 'border-gray-800 hover:border-red-500/50'
+                    isCancelled
+                      ? 'border-red-900/50 bg-red-900/10'
+                      : isExpired
+                        ? 'border-gray-700 hover:border-gray-600 bg-gray-900/30'
+                        : 'border-gray-800 hover:border-red-500/50'
                   }`}
                 >
-                  {isExpired && (
-                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 py-1 px-4 text-center">
+                  {/* Status header */}
+                  {isCancelled ? (
+                    <div className="bg-gradient-to-r from-red-900/50 to-red-800/50 py-2 px-4 text-center">
+                      <span className="text-xs font-medium text-red-300 flex items-center justify-center">
+                        <FiX className="w-4 h-4 mr-1" />
+                        This booking has been cancelled
+                      </span>
+                    </div>
+                  ) : isExpired ? (
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 py-2 px-4 text-center">
                       <span className="text-xs font-medium text-gray-400 flex items-center justify-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <FiClock className="w-4 h-4 mr-1" />
                         This show has already occurred
                       </span>
                     </div>
-                  )}
+                  ) : null}
 
-                  <div className={`p-6 flex flex-col md:flex-row gap-6 ${isExpired ? 'opacity-80' : ''}`}>
+                  <div className={`p-6 flex flex-col md:flex-row gap-6 ${isCancelled ? 'opacity-90' : ''}`}>
                     <div className="flex-shrink-0 relative">
                       <div className="relative">
                         <img
                           src={booking.posterPath || '/placeholder-poster.jpg'}
                           alt={booking.movieTitle}
                           className={`w-32 h-48 object-cover rounded-lg shadow-md border-2 transition-colors duration-300 ${
-                            isExpired
-                              ? 'border-gray-700 grayscale-[30%]'
-                              : 'border-gray-700 hover:border-red-500'
+                            isCancelled
+                              ? 'border-red-900/50 grayscale-[50%]'
+                              : isExpired
+                                ? 'border-gray-700 grayscale-[30%]'
+                                : 'border-gray-700 hover:border-red-500'
                           }`}
                         />
-                        {isExpired && (
-                          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        {isCancelled && (
+                          <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm rotate-[-15deg] transform bg-red-900/70 px-2 py-1 rounded">
+                              CANCELLED
+                            </span>
+                          </div>
+                        )}
+                        {isExpired && !isCancelled && (
+                          <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
                             <span className="text-white font-bold text-sm rotate-[-15deg] transform bg-black/70 px-2 py-1 rounded">
                               SHOW ENDED
                             </span>
@@ -311,13 +354,21 @@ export default function MyOrders() {
                       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                         <div>
                           <h2 className={`text-xl font-bold transition-colors duration-200 ${
-                            isExpired ? 'text-gray-400' : 'text-white hover:text-red-400'
+                            isCancelled
+                              ? 'text-red-300 line-through'
+                              : isExpired
+                                ? 'text-gray-400'
+                                : 'text-white hover:text-red-400'
                           }`}>
                             {booking.movieTitle}
                           </h2>
                           <div className="flex items-center mt-1 mb-2">
                             <span className={`px-2 py-1 rounded text-xs font-bold mr-2 flex items-center ${
-                              isExpired ? 'bg-gray-800 text-gray-400' : 'bg-yellow-500/90 text-black'
+                              isCancelled
+                                ? 'bg-red-900/50 text-red-200'
+                                : isExpired
+                                  ? 'bg-gray-800 text-gray-400'
+                                  : 'bg-yellow-500/90 text-black'
                             }`}>
                               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -325,14 +376,18 @@ export default function MyOrders() {
                               {booking.rating || 'N/A'}
                             </span>
                             <span className={`text-sm ${
-                              isExpired ? 'text-gray-500' : 'text-gray-400'
+                              isCancelled
+                                ? 'text-red-400/80'
+                                : isExpired
+                                  ? 'text-gray-500'
+                                  : 'text-gray-400'
                             }`}>
                               {formatDate(booking.date)} • {formattedShowtime}
                             </span>
                           </div>
 
                           {/* Time status indicator */}
-                          {timeStatus && (
+                          {timeStatus && !isCancelled && (
                             <div className={`text-xs px-2 py-1 rounded-full inline-flex items-center mt-1 ${
                               isExpired
                                 ? 'bg-gray-800 text-gray-400'
@@ -340,9 +395,7 @@ export default function MyOrders() {
                                   ? 'bg-red-900/50 text-red-300 animate-pulse'
                                   : 'bg-blue-900/50 text-blue-300'
                             }`}>
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
+                              <FiClock className="w-3 h-3 mr-1" />
                               {timeStatus.totalMinutes <= 30
                                 ? `Hurry! ${timeStatus.minutes}m remaining`
                                 : `${timeStatus.hours}h ${timeStatus.minutes}m remaining - ${timeStatus.dayLabel}`}
@@ -352,18 +405,20 @@ export default function MyOrders() {
 
                         <div className="flex flex-col items-end">
                           <span className={`text-lg font-bold ${
-                            isExpired ? 'text-gray-500' : 'text-yellow-400'
+                            isCancelled
+                              ? 'text-red-300 line-through'
+                              : isExpired
+                                ? 'text-gray-500'
+                                : 'text-yellow-400'
                           }`}>
                             ₹{booking.totalAmount}
                           </span>
                           <span
                             className={`text-xs px-2 py-1 rounded-full mt-1 ${
-                              booking.status === 'CONFIRMED'
-                                ? isExpired
-                                  ? 'bg-gray-800 text-gray-400'
-                                  : 'bg-green-900/50 text-green-300'
-                                : booking.status === 'CANCELLED'
+                              isCancelled
                                 ? 'bg-red-900/50 text-red-300'
+                                : booking.status === 'CONFIRMED'
+                                ? 'bg-green-900/50 text-green-300'
                                 : 'bg-gray-800 text-gray-300'
                             }`}
                           >
@@ -372,29 +427,31 @@ export default function MyOrders() {
                         </div>
                       </div>
 
-                      {/* Important notice - only for upcoming shows */}
-                      {!isExpired && timeStatus && (
-                        <div className="mt-3 bg-gray-800/50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
+                      {/* Status notice */}
+                      {isCancelled ? (
+                        <div className="mt-3 bg-red-900/20 border-l-4 border-red-500 p-3 rounded-r-lg">
                           <div className="flex items-start">
-                            <svg className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <p className="text-xs text-gray-300">
-                              {timeStatus.totalMinutes <= 30
-                                ? "Proceed directly to your seat."
-                                : "Please arrive at least 30 minutes before showtime for ticket verification. Late arrivals may not be admitted."}
+                            <FiX className="w-4 h-4 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
+                            <p className="text-xs text-red-300">
+                              This booking was cancelled. Refund will be processed within 5-7 business days.
                             </p>
                           </div>
                         </div>
-                      )}
-
-                      {/* Expired notice */}
-                      {isExpired && (
+                      ) : !isExpired && timeStatus ? (
+                        <div className="mt-3 bg-gray-800/50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
+                          <div className="flex items-start">
+                            <FiAlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" />
+                            <p className="text-xs text-gray-300">
+                              {timeStatus.totalMinutes <= 30
+                                ? "Proceed directly to your seat."
+                                : "Please arrive at least 30 minutes before showtime for ticket verification."}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
                         <div className="mt-3 bg-gray-800/50 border-l-4 border-gray-500 p-3 rounded-r-lg">
                           <div className="flex items-start">
-                            <svg className="w-4 h-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <FiClock className="w-4 h-4 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
                             <p className="text-xs text-gray-400">
                               This show has already occurred. We hope you enjoyed your experience!
                             </p>
@@ -406,29 +463,26 @@ export default function MyOrders() {
                         <Link
                           href={`/my-bookings/${booking.reference}`}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg flex items-center ${
-                            isExpired
-                              ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:shadow-gray-800/10 cursor-not-allowed'
+                            isCancelled
+                              ? 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50 cursor-not-allowed'
                               : 'bg-gray-800 hover:bg-gray-700 text-white hover:shadow-gray-800/30'
                           }`}
                         >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
+                          <FiEye className="w-4 h-4 mr-2" />
                           View Details
                         </Link>
 
-                        {!isExpired && (
+                        {!isCancelled && !isExpired && (
                           <>
                             <button
                               className="px-4 py-2 bg-red-900/50 hover:bg-red-800/50 text-red-300 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg hover:shadow-red-900/20 flex items-center"
                               onClick={() => {
-                                alert('Cancellation functionality will be implemented here');
+                                if (window.confirm(`Are you sure you want to cancel booking ${booking.reference}? A refund of ₹${booking.totalAmount} will be processed.`)) {
+                                  handleCancelBooking(booking.reference);
+                                }
                               }}
                             >
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <FiX className="w-4 h-4 mr-2" />
                               Cancel Booking
                             </button>
                             <button
@@ -462,9 +516,7 @@ export default function MyOrders() {
                                 }
                               }}
                             >
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
+                              <FiDownload className="w-4 h-4 mr-2" />
                               Download Ticket
                             </button>
                           </>
