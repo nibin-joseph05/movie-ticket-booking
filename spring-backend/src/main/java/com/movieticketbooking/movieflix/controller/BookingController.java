@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.LocalDate;
 import java.util.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -477,5 +479,34 @@ public class BookingController {
         }
     }
 
+    @GetMapping("/booked-seats")
+    public ResponseEntity<?> getBookedSeats(
+            @RequestParam String theaterId,
+            @RequestParam String showtime,
+            @RequestParam String date) {
+
+        try {
+            LocalDate parsedDate = LocalDate.parse(date);
+
+            List<String> bookedSeats = bookedSeatRepository.findBookedSeatsByTheaterShowtimeAndDate(
+                    theaterId, showtime, parsedDate);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "bookedSeats", bookedSeats
+            ));
+
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("status", "error", "message", "Invalid date format. Use yyyy-MM-dd")
+            );
+        } catch (Exception e) {
+            logger.error("Error fetching booked seats for theater {} showtime {} date {}",
+                    theaterId, showtime, date, e);
+            return ResponseEntity.internalServerError().body(
+                    Map.of("status", "error", "message", "Failed to fetch booked seats")
+            );
+        }
+    }
 
 }

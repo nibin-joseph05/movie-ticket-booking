@@ -12,15 +12,45 @@ export default function BookingPage() {
   const theaterId = searchParams.get("theater");
   const showtime = searchParams.get("showtime");
   const category = searchParams.get("category");
-  const seats = parseInt(searchParams.get("seats"), 10); // Parse seats as a number
-  const price = parseFloat(searchParams.get("price")); // Total price from URL
+  const seats = parseInt(searchParams.get("seats"), 10);
+  const price = parseFloat(searchParams.get("price"));
   const date = searchParams.get("date");
 
   // State for movie and theater details
   const [bookingDetails, setBookingDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedSeats, setSelectedSeats] = useState([]); // Initialize as an empty array
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [bookedSeats, setBookedSeats] = useState([]);
+
+  useEffect(() => {
+      const fetchData = async () => {
+        try {
+          // Fetch booking details
+          const detailsResponse = await fetch(
+            `http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`
+          );
+          if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
+          const detailsData = await detailsResponse.json();
+          setBookingDetails(detailsData);
+
+          // Fetch booked seats for this showtime
+          const seatsResponse = await fetch(
+            `http://localhost:8080/booking/booked-seats?theaterId=${theaterId}&showtime=${showtime}&date=${date}`
+          );
+          if (!seatsResponse.ok) throw new Error("Failed to fetch booked seats.");
+          const seatsData = await seatsResponse.json();
+          setBookedSeats(seatsData.bookedSeats || []);
+
+        } catch (error) {
+          setError(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, [movieId, theaterId, showtime, date]);
 
   // Fetch movie and theater details
   useEffect(() => {
@@ -182,8 +212,9 @@ export default function BookingPage() {
         <SeatSelectionGrid
           selectedSeats={selectedSeats}
           setSelectedSeats={setSelectedSeats}
-          maxSeats={seats} // Pass the number of seats directly (not as an array length)
+          maxSeats={seats}
           category={category}
+          bookedSeats={bookedSeats}
         />
       </div>
     </div>

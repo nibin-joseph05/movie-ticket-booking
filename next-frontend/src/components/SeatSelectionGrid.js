@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category }) => {
-  const rows = ["A", "B", "C", "D", "E", "F", "G"]; // 7 rows
-  const seatsPerRow = 10; // 10 seats per row (total 70 seats)
+const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category, bookedSeats = [] }) => {
+  const rows = ["A", "B", "C", "D", "E", "F", "G"];
+  const seatsPerRow = 10;
 
   const toggleSeatSelection = (seatNumber) => {
+    if (bookedSeats.includes(seatNumber)) {
+      return; // Do nothing if seat is booked
+    }
+
     const row = seatNumber.charAt(0);
 
     // Check if the selected seat is in the same category
@@ -17,8 +21,8 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
       const confirmChange = window.confirm(
         `You selected a seat from a different category (${row}). Do you want to continue?`
       );
-      if (!confirmChange) return; // If the user clicks "Cancel," do nothing
-      window.history.back(); // If the user clicks "OK," redirect to the previous page
+      if (!confirmChange) return;
+      window.history.back();
       return;
     }
 
@@ -27,18 +31,23 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
       const confirmExceed = window.confirm(
         `You are trying to select more seats than initially specified (${maxSeats}). Do you want to continue?`
       );
-      if (!confirmExceed) return; // If the user clicks "Cancel," do nothing
+      if (!confirmExceed) return;
     }
 
     setSelectedSeats((prev) =>
       prev.includes(seatNumber)
-        ? prev.filter((seat) => seat !== seatNumber) // Deselect the seat if already selected
-        : [...prev, seatNumber] // Select the seat if not already selected
+        ? prev.filter((seat) => seat !== seatNumber)
+        : [...prev, seatNumber]
     );
   };
 
   const getSeatColor = (seatNumber) => {
-    if (selectedSeats.includes(seatNumber)) return "bg-green-500 shadow-lg shadow-green-400 scale-110"; // Selected (Green)
+    if (bookedSeats.includes(seatNumber)) {
+      return "bg-red-500 cursor-not-allowed shadow-md shadow-red-300"; // Booked seats (Red)
+    }
+    if (selectedSeats.includes(seatNumber)) {
+      return "bg-green-500 shadow-lg shadow-green-400 scale-110"; // Selected (Green)
+    }
 
     const row = seatNumber.charAt(0);
     if (["A", "B", "C", "D"].includes(row)) return "bg-gray-500 hover:bg-gray-400 shadow-md shadow-gray-300"; // Silver
@@ -46,6 +55,10 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
     if (["G"].includes(row)) return "bg-blue-500 hover:bg-blue-400 shadow-md shadow-blue-300"; // Platinum
 
     return "bg-gray-700 hover:bg-gray-500";
+  };
+
+  const getSeatCursor = (seatNumber) => {
+    return bookedSeats.includes(seatNumber) ? "cursor-not-allowed" : "cursor-pointer";
   };
 
   return (
@@ -82,13 +95,15 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
           <div className="grid grid-cols-10 gap-6">
             {[...Array(seatsPerRow)].map((_, index) => {
               const seatNumber = `${row}${index + 1}`;
+              const isBooked = bookedSeats.includes(seatNumber);
+
               return (
                 <motion.div
                   key={seatNumber}
-                  className={`w-12 h-12 flex items-center justify-center rounded-lg text-white font-bold cursor-pointer transition-all transform ${getSeatColor(seatNumber)}`}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => toggleSeatSelection(seatNumber)}
+                  className={`w-12 h-12 flex items-center justify-center rounded-lg text-white font-bold transition-all transform ${getSeatColor(seatNumber)} ${getSeatCursor(seatNumber)}`}
+                  whileHover={!isBooked ? { scale: 1.1 } : {}}
+                  whileTap={!isBooked ? { scale: 0.9 } : {}}
+                  onClick={() => !isBooked && toggleSeatSelection(seatNumber)}
                 >
                   {seatNumber}
                 </motion.div>
@@ -98,10 +113,18 @@ const SeatSelectionGrid = ({ selectedSeats, setSelectedSeats, maxSeats, category
         </div>
       ))}
 
-      {/* Seat Categories */}
+      {/* Seat Status Legend */}
       <div className="mt-12 text-center">
-        <div className="text-xl font-bold mb-4">Seat Categories</div>
+        <div className="text-xl font-bold mb-4">Seat Status</div>
         <div className="flex gap-10">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-red-500 rounded shadow-md"></div>
+            <span className="text-lg">Booked</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-green-500 rounded shadow-md"></div>
+            <span className="text-lg">Selected</span>
+          </div>
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 bg-gray-500 rounded shadow-md animate-pulse"></div>
             <span className="text-lg">Silver (A–D)</span>
