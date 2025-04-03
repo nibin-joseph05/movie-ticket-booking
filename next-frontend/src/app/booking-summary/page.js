@@ -27,12 +27,14 @@ export default function BookingSummaryPage() {
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState('verifying');
 
   // Fetch movie and theater details
   useEffect(() => {
 
-    if (initialLoad) {
+    if (initialLoading) {
         const foodParam = searchParams.get("food");
         if (foodParam) {
           try {
@@ -42,18 +44,18 @@ export default function BookingSummaryPage() {
             console.error("Error parsing food items:", error);
           }
         }
-        setInitialLoad(false);
+        setInitialLoading(false);
       }
 
     const foodParam = searchParams.get("food");
-      if (foodParam && (initialLoad || !isLoggedIn)) {
+      if (foodParam && (initialLoading || !isLoggedIn)) {
         try {
           const decodedFood = JSON.parse(decodeURIComponent(foodParam));
           setSelectedFood(decodedFood);
         } catch (error) {
           console.error("Error parsing food items:", error);
         }
-        if (initialLoad) setInitialLoad(false);
+        if (initialLoading) setInitialLoading(false);
       }
 
       const fetchData = async () => {
@@ -74,12 +76,12 @@ export default function BookingSummaryPage() {
         } catch (error) {
           setError(error.message);
         } finally {
-          setLoading(false);
+          setInitialLoading(false);
         }
       };
 
     fetchData();
-  }, [movieId, theaterId, initialLoad, isLoggedIn]);
+  }, [movieId, theaterId, initialLoading, isLoggedIn]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -195,7 +197,7 @@ export default function BookingSummaryPage() {
         return;
       }
 
-          setLoading(true);
+          setInitialLoading(false);
 
           // Check if Razorpay is already loaded
           if (!window.Razorpay) {
@@ -238,6 +240,8 @@ export default function BookingSummaryPage() {
       if (!orderResponse.ok) throw new Error("Failed to create payment order");
       const orderData = await orderResponse.json();
 
+      setInitialLoading(false);
+
       // 4. Load Razorpay script dynamically
       const loadScript = (src) => {
         return new Promise((resolve) => {
@@ -262,10 +266,14 @@ export default function BookingSummaryPage() {
         name: "MovieFlix",
         description: "Movie Ticket Booking",
         order_id: orderData.id,
+        // Inside the handler function of Razorpay options:
         handler: async function(response) {
           try {
+            setPaymentProcessing(true);
+            setLoadingPhase('verifying');
+
             console.log("Payment successful, verifying...", {
-              seats: seats // Debug log
+              seats: seats
             });
 
             const verificationResponse = await fetch('http://localhost:8080/api/payments/verify-payment', {
@@ -280,7 +288,6 @@ export default function BookingSummaryPage() {
                 razorpaySignature: response.razorpay_signature,
                 seats: seats.join(','),
                 foodItems: selectedFood.length > 0 ? JSON.stringify(selectedFood) : null,
-                // Add these additional parameters
                 showtime: showtime,
                 date: date,
                 category: category,
@@ -293,11 +300,21 @@ export default function BookingSummaryPage() {
 
             const verificationData = await verificationResponse.json();
             if (verificationData.status === 'success') {
+              setLoadingPhase('saving');
+              // Simulate processing time for saving booking
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
+              setLoadingPhase('sending');
+              // Simulate processing time for sending email
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
               window.location.href = `/booking-success?bookingId=${verificationData.bookingId}`;
             } else {
+              setLoading(false);
               setError('Payment verification failed. Please contact support.');
             }
           } catch (error) {
+            setLoading(false);
             console.error("Verification error:", error);
             setError('Error verifying payment: ' + error.message);
           }
@@ -326,8 +343,8 @@ export default function BookingSummaryPage() {
     }
   };
 
-  // Loading state
-  if (loading) {
+  // Initial loading state (simple spinner)
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] via-[#0d0d12] to-[#000000] text-white flex items-center justify-center">
         <motion.div
@@ -347,7 +364,79 @@ export default function BookingSummaryPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            Preparing your cinematic experience...
+            Preparing your booking details...
+          </motion.p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Payment processing state (enhanced with phases)
+  if (paymentProcessing) {
+    const phaseMessages = {
+      verifying: "Verifying payment details...",
+      saving: "Confirming your booking...",
+      sending: "Preparing your tickets and sending confirmation..."
+    };
+
+    const phaseTips = {
+      verifying: "This usually takes just a few moments",
+      saving: "Securing your seats in our system",
+      sending: "Almost there! Your tickets are on the way"
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] via-[#0d0d12] to-[#000000] text-white flex items-center justify-center">
+        <motion.div
+          className="flex flex-col items-center max-w-md text-center p-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            className="w-16 h-16 border-4 border-transparent border-t-red-500 border-r-red-500 rounded-full mb-6"
+          />
+
+          <motion.h2
+            className="text-2xl font-bold text-white mb-2"
+            key={loadingPhase}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            {phaseMessages[loadingPhase]}
+          </motion.h2>
+
+          <motion.p
+            className="text-gray-400 mb-6"
+            key={`tip-${loadingPhase}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            {phaseTips[loadingPhase]}
+          </motion.p>
+
+          <div className="w-full bg-gray-800 rounded-full h-2.5">
+            <motion.div
+              className="bg-gradient-to-r from-red-500 to-pink-600 h-2.5 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: loadingPhase === 'verifying' ? '40%' :
+                                 loadingPhase === 'saving' ? '75%' : '100%' }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+            />
+          </div>
+
+          <motion.p
+            className="text-xs text-gray-500 mt-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            Please don't close this window or refresh the page
           </motion.p>
         </motion.div>
       </div>
