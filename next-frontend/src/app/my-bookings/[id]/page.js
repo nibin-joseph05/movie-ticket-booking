@@ -50,20 +50,19 @@ export default function BookingDetails({ params }) {
       );
 
       if (response.data.status === 'success') {
+        // Update the booking state immediately
+        setBooking(prev => ({
+          ...prev,
+          paymentStatus: 'CANCELLED',
+          cancellationTime: new Date().toISOString()
+        }));
+
         setCancelSuccess(true);
         setRefundDetails({
           status: response.data.data.refund_status || 'REFUND_PENDING',
           amount: booking.totalAmount,
           message: 'Refund will be processed within 5-7 business days'
         });
-
-        // Update booking status
-        const updatedBooking = {
-          ...booking,
-          paymentStatus: 'CANCELLED',
-          cancellationTime: new Date().toISOString()
-        };
-        setBooking(updatedBooking);
       } else {
         setCancelError(response.data.message || 'Failed to cancel booking');
       }
@@ -675,7 +674,7 @@ export default function BookingDetails({ params }) {
 
                   <div className="mt-6 space-y-4">
                     {/* Ticket download button - only show if not cancelled */}
-                    {!isCancelled && (
+                    {!isCancelled && !cancelling && (
                       <div className="w-full">
                         <TicketDownloadButton
                           bookingRef={booking.reference}
