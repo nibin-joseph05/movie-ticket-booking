@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import Link from "next/link";
 import TheatreInfoPopup from "@/components/theatre-map";
 import MovieInfo from "@/components/MovieInfo";
 import SeatCategoryPopup from "@/components/SeatCategoryPopup";
@@ -14,9 +13,6 @@ export default function Showtimes() {
   const movieId = searchParams.get("movieId");
   const theatreId = searchParams.get("theatreId");
 
-  console.log("Movie ID:", movieId);
-  console.log("Theatre ID:", theatreId);
-
   const [movieDetails, setMovieDetails] = useState(null);
   const [theatreDetails, setTheatreDetails] = useState(null);
   const [showtimes, setShowtimes] = useState([]);
@@ -25,12 +21,31 @@ export default function Showtimes() {
   const [isMoviePopupOpen, setIsMoviePopupOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isSeatPopupOpen, setIsSeatPopupOpen] = useState(false);
-  const [bookingData, setBookingData] = useState(null);
   const [activeShowtime, setActiveShowtime] = useState(null);
-  const [seatPrices, setSeatPrices] = useState([]);
   const [fetchError, setFetchError] = useState(null);
+  const [seatPrices, setSeatPrices] = useState([]);
 
+  // Helper function to check if showtime has passed
+  const isShowtimePassed = (showtime, date) => {
+    const now = new Date();
+    const [time, period] = showtime.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
 
+    // Convert to 24-hour format
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    // Create show datetime object
+    const showDate = new Date(date);
+    showDate.setHours(hours, minutes, 0, 0);
+
+    return showDate < now;
+  };
+
+  // Filter out past showtimes
+  const validShowtimes = showtimes.filter(show =>
+    !isShowtimePassed(show.time, selectedDate)
+  );
 
   useEffect(() => {
     if (theatreId) {
@@ -43,7 +58,6 @@ export default function Showtimes() {
       fetchMovieDetails();
     }
   }, [movieId, theatreId, selectedDate]);
-
 
   useEffect(() => {
     const fetchSeatPrices = async () => {
@@ -60,24 +74,6 @@ export default function Showtimes() {
     fetchSeatPrices();
   }, []);
 
-
-  useEffect(() => {
-    if (
-      bookingData?.category &&
-      bookingData?.seats?.length > 0 &&
-      activeShowtime?.time &&
-      movieId &&
-      theatreId &&
-      selectedDate
-    ) {
-      console.log("Redirecting with:", { movieId, theatreId, activeShowtime, bookingData, selectedDate });
-
-      window.location.href = `/booking?movieId=${encodeURIComponent(movieId)}&theatreId=${encodeURIComponent(theatreId)}&showtime=${encodeURIComponent(activeShowtime.time)}&category=${encodeURIComponent(bookingData.category)}&seats=${encodeURIComponent(bookingData.seats)}&price=${encodeURIComponent(bookingData.price)}&date=${encodeURIComponent(selectedDate)}`;
-    }
-  }, [bookingData, activeShowtime, movieId, theatreId, selectedDate]);
-
-
-
   const fetchMovieDetails = async () => {
     try {
       const res = await fetch(`http://localhost:8080/movies/details?id=${movieId}`);
@@ -87,7 +83,6 @@ export default function Showtimes() {
       console.error("Error fetching movie details:", error);
     }
   };
-
 
   const fetchTheatreDetails = async () => {
     try {
@@ -109,7 +104,7 @@ export default function Showtimes() {
       }
 
       const data = await res.json();
-      console.log("API Response:", data); // Debug log
+      console.log("API Response:", data);
 
       if (Array.isArray(data)) {
         const formattedShowtimes = data.map(show => ({
@@ -130,7 +125,6 @@ export default function Showtimes() {
       setLoading(false);
     }
   };
-
 
   const getNextSevenDays = () => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -177,11 +171,9 @@ export default function Showtimes() {
     }
   };
 
-
-    const handleCategorySelect = (category) => {
-      setSelectedCategory(category);
-    };
-
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
@@ -218,18 +210,15 @@ export default function Showtimes() {
                 <span className="text-lg">🔙</span>
                 <span className="font-medium">Back</span>
               </button>
-
             </div>
           </motion.div>
         )}
 
-        {/* Movie Info Popup */}
         {isMoviePopupOpen && movieDetails && (
           <MovieInfo movieDetails={movieDetails} onClose={() => setIsMoviePopupOpen(false)} />
         )}
 
         <div className="flex flex-col items-center">
-          {/* Date Selection Buttons */}
           <div className="flex justify-center space-x-2 my-4">
             {getNextSevenDays().map(({ date, day, number, month, isEnabled }) => (
               <motion.button
@@ -249,7 +238,6 @@ export default function Showtimes() {
             ))}
           </div>
 
-          {/* Selected Date Display */}
           {selectedDate && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -261,7 +249,6 @@ export default function Showtimes() {
             </motion.div>
           )}
         </div>
-
 
         <h2 className="text-4xl font-bold text-center text-white my-8 drop-shadow-lg">
           🎟 Available Showtimes
@@ -282,82 +269,89 @@ export default function Showtimes() {
               Retry
             </button>
           </div>
-        ) : showtimes.length > 0 ? (
+        ) : validShowtimes.length > 0 ? (
           <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8">
-            {showtimes.map((show, index) => {
-              const totalSeats = show.totalSeats || 100;
-              const bookedSeats = totalSeats - (show.availableSeats || 0);
-              const seatFillPercentage = (bookedSeats / totalSeats) * 100;
-
-              let seatColor = "text-green-400"; // Default (Plenty seats)
-              if (seatFillPercentage > 80) seatColor = "text-red-500"; // Almost full
-              else if (seatFillPercentage > 40) seatColor = "text-yellow-400"; // Filling fast
+            {validShowtimes.map((show, index) => {
+              const isPast = isShowtimePassed(show.time, selectedDate);
 
               return (
                 <motion.div
                   key={index}
-                  whileHover={{ scale: 1.05, boxShadow: "0px 8px 20px rgba(255, 0, 0, 0.5)" }}
-                  whileTap={{ scale: 0.97 }}
-                  className="relative backdrop-blur-lg bg-gray-900/70 p-6 rounded-2xl shadow-xl border border-gray-800 hover:border-red-500
-                             transition-all text-center flex flex-col justify-between items-center"
+                  className={`relative backdrop-blur-lg p-6 rounded-2xl shadow-xl border ${
+                    isPast
+                      ? 'border-gray-700 bg-gray-900/50'
+                      : 'border-gray-800 hover:border-red-500 bg-gray-900/70'
+                  }`}
                 >
-                  {/* Showtime Header */}
-                  <div className="flex justify-center items-center w-full mb-4">
-                    <span className="text-2xl font-bold text-white tracking-wide">{show.time}</span>
-                  </div>
-
-                  {/* Category Selection */}
-                  <div className="mt-3 flex justify-center space-x-3">
-                    {show.seatCategories?.map((cat) => (
-                      <button
-                        key={cat.type}
-                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
-                          selectedCategory?.type === cat.type
-                            ? "bg-gradient-to-r from-red-500 to-red-700 shadow-md text-white"
-                            : "bg-gray-700 hover:bg-red-500 text-gray-200"
-                        }`}
-                        onClick={() => handleCategorySelect(cat)}
-                      >
-                        {cat.type.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Seat Availability & Price */}
-                  <div className="flex flex-col items-center gap-3 mt-4">
-                    {selectedCategory && selectedCategory.type ? (
-                      <>
-                        <p className="text-lg font-semibold text-white bg-gray-800 px-3 py-1 rounded-lg">
-                          {selectedCategory.type} Category
-                        </p>
-                        <p className="text-gray-300">
-                          Seats Available: <span className="font-semibold text-white">{selectedCategory.seatsAvailable}</span>
-                        </p>
-                        <p className="text-gray-300">
-                          Price: <span className="text-xl font-semibold text-green-400">₹{selectedCategory.price}</span>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-gray-400 italic">No category selected. Please choose one to proceed.</p>
+                  <div className="flex justify-between items-center w-full mb-2">
+                    <span className="text-2xl font-bold tracking-wide">
+                      {show.time}
+                    </span>
+                    {isPast && (
+                      <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
+                        SHOW ENDED
+                      </span>
                     )}
                   </div>
 
-                  {/* Book Now Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`mt-6 w-full bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-xl font-bold text-lg shadow-lg
-                                hover:from-red-700 hover:to-red-900 transition-all
-                                ${!selectedCategory?.type ? "opacity-50 cursor-not-allowed" : ""}`}
-                    onClick={() => {
-                      setActiveShowtime(show);
-                      setIsSeatPopupOpen(true);
-                    }}
-                    disabled={!selectedCategory?.type}  // Ensuring only a valid category enables the button
-                  >
-                    Book Now
-                  </motion.button>
+                  {isPast ? (
+                    <div className="text-center py-4 text-gray-500">
+                      This showtime has already passed
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-3 flex justify-center space-x-3">
+                        {show.seatCategories?.map((cat) => (
+                          <button
+                            key={cat.type}
+                            className={`px-4 py-2 rounded-lg font-semibold text-sm ${
+                              selectedCategory?.type === cat.type
+                                ? "bg-gradient-to-r from-red-500 to-red-700"
+                                : "bg-gray-700 hover:bg-red-500"
+                            }`}
+                            onClick={() => handleCategorySelect(cat)}
+                          >
+                            {cat.type.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
 
+                      <div className="flex flex-col items-center gap-3 mt-4">
+                        {selectedCategory && selectedCategory.type ? (
+                          <>
+                            <p className="text-lg font-semibold text-white bg-gray-800 px-3 py-1 rounded-lg">
+                              {selectedCategory.type} Category
+                            </p>
+                            <p className="text-gray-300">
+                              Seats Available: <span className="font-semibold text-white">{selectedCategory.seatsAvailable}</span>
+                            </p>
+                            <p className="text-gray-300">
+                              Price: <span className="text-xl font-semibold text-green-400">₹{selectedCategory.price}</span>
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-gray-400 italic">Select a category</p>
+                        )}
+                      </div>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`mt-6 w-full px-6 py-3 rounded-xl font-bold text-lg ${
+                          !selectedCategory?.type
+                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                            : "bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900"
+                        }`}
+                        onClick={() => {
+                          setActiveShowtime(show);
+                          setIsSeatPopupOpen(true);
+                        }}
+                        disabled={!selectedCategory?.type}
+                      >
+                        Book Now
+                      </motion.button>
+                    </>
+                  )}
                 </motion.div>
               );
             })}
@@ -368,7 +362,11 @@ export default function Showtimes() {
             animate={{ opacity: 1 }}
             className="text-center py-10"
           >
-            <p className="text-gray-400 text-lg">No showtimes available for selected date</p>
+            <p className="text-gray-400 text-lg">
+              {showtimes.length > 0
+                ? "No available showtimes remaining for selected date"
+                : "No showtimes available for selected date"}
+            </p>
             <button
               onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
               className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -389,11 +387,9 @@ export default function Showtimes() {
             date={selectedDate}
           />
         )}
-
       </main>
 
       <Footer />
     </div>
   );
-
 }

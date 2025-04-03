@@ -17,8 +17,7 @@ export default function BookingDetails({ params }) {
   const router = useRouter();
   const [timeLoading, setTimeLoading] = useState(true);
 
-  const parseTimeString = (timeString) => {
-    // Parse time string in "h:mm a" format (e.g., "2:30 PM")
+  const parseTimeString = (timeString, dateString) => {
     const [time, period] = timeString.split(' ');
     const [hours, minutes] = time.split(':').map(Number);
 
@@ -30,7 +29,14 @@ export default function BookingDetails({ params }) {
       hours24 = 0;
     }
 
-    return { hours: hours24, minutes };
+    // Parse the date parts
+    const dateParts = dateString.split('-');
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1;
+    const day = parseInt(dateParts[2]);
+
+    // Create date in local timezone
+    return new Date(year, month, day, hours24, minutes);
   };
 
   const calculateTimeLeft = (showDateTime) => {
@@ -42,10 +48,41 @@ export default function BookingDetails({ params }) {
     }
 
     const totalMinutes = Math.floor(diff / (1000 * 60));
+
+    // Get dates in theater timezone (Asia/Kolkata)
+    const options = { timeZone: 'Asia/Kolkata' };
+    const nowInTheaterTZ = new Date(now.toLocaleString('en-US', options));
+    const showDateInTheaterTZ = new Date(showDateTime.toLocaleString('en-US', options));
+
+    // Extract just the date parts (ignoring time)
+    const nowDateStr = nowInTheaterTZ.toISOString().split('T')[0];
+    const showDateStr = showDateInTheaterTZ.toISOString().split('T')[0];
+
+    let dayLabel;
+    if (nowDateStr === showDateStr) {
+      dayLabel = 'Today';
+    } else {
+      // Check if it's tomorrow in theater timezone
+      const tomorrow = new Date(nowInTheaterTZ);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      if (showDateStr === tomorrowStr) {
+        dayLabel = 'Tomorrow';
+      } else {
+        // Show is more than 1 day away
+        dayLabel = showDateTime.toLocaleDateString('en-US', {
+          weekday: 'long',
+          timeZone: 'Asia/Kolkata'
+        });
+      }
+    }
+
     return {
       hours: Math.floor(totalMinutes / 60),
       minutes: totalMinutes % 60,
-      totalMinutes: totalMinutes
+      totalMinutes: totalMinutes,
+      dayLabel
     };
   };
 
@@ -63,19 +100,8 @@ export default function BookingDetails({ params }) {
           const apiData = response.data.data;
           const now = new Date();
 
-          // Parse the date and time from the API response
-          const dateParts = apiData.booking.date.split('-');
-          const { hours, minutes } = parseTimeString(apiData.booking.time);
-
-          // Create showDateTime in local timezone
-          const showDateTime = new Date(
-            dateParts[0],
-            dateParts[1] - 1,
-            dateParts[2],
-            hours,
-            minutes
-          );
-
+          // Create showDateTime using parseTimeString (only once)
+          const showDateTime = parseTimeString(apiData.booking.time, apiData.booking.date);
           const isExpired = showDateTime < now;
           const timeStatus = calculateTimeLeft(showDateTime);
 
@@ -100,13 +126,18 @@ export default function BookingDetails({ params }) {
             foodItems: apiData.foodItems || [],
             isExpired,
             showDateTime,
-            formattedDate: new Date(apiData.booking.date).toLocaleDateString('en-US', {
+            formattedDate: showDateTime.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
-              day: 'numeric'
+              day: 'numeric',
+              timeZone: 'Asia/Kolkata'
             }),
-            formattedTime: apiData.booking.time, // Use the original formatted time
+            formattedTime: showDateTime.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZone: 'Asia/Kolkata'
+            }),
             subtotal: apiData.booking.totalAmount,
             taxes: 0,
             totalAmount: apiData.booking.totalAmount,
@@ -130,7 +161,6 @@ export default function BookingDetails({ params }) {
   }, [params]);
 
   // Update time left counter
-  // Update time left counter
   useEffect(() => {
     if (!booking) {
       setTimeLoading(false);
@@ -142,14 +172,42 @@ export default function BookingDetails({ params }) {
       const diff = booking.showDateTime - now;
 
       if (diff <= 0) {
-        // Instead of updating booking, just set timeLeft to null
         setTimeLeft(null);
       } else {
         const totalMinutes = Math.floor(diff / (1000 * 60));
+
+        // UTC-based day comparison
+        const nowUTC = new Date(Date.UTC(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        ));
+
+        const showDateUTC = new Date(Date.UTC(
+          booking.showDateTime.getFullYear(),
+          booking.showDateTime.getMonth(),
+          booking.showDateTime.getDate()
+        ));
+
+        const daysDiff = Math.floor((showDateUTC - nowUTC) / (1000 * 60 * 60 * 24));
+
+        let dayLabel;
+        if (daysDiff === 0) {
+          dayLabel = 'Today';
+        } else if (daysDiff === 1) {
+          dayLabel = 'Tomorrow';
+        } else {
+          dayLabel = booking.showDateTime.toLocaleDateString('en-US', {
+            weekday: 'long',
+            timeZone: 'Asia/Kolkata'
+          });
+        }
+
         setTimeLeft({
           hours: Math.floor(totalMinutes / 60),
           minutes: totalMinutes % 60,
-          totalMinutes: totalMinutes
+          totalMinutes: totalMinutes,
+          dayLabel
         });
       }
       setTimeLoading(false);
@@ -158,7 +216,6 @@ export default function BookingDetails({ params }) {
     // Initial calculation
     updateTimeLeft();
 
-    // Only set up timer if show hasn't started
     if (booking.showDateTime > new Date()) {
       const timer = setInterval(updateTimeLeft, 60000);
       return () => clearInterval(timer);
@@ -244,7 +301,7 @@ export default function BookingDetails({ params }) {
                         : `Show starts in ${timeLeft.hours}h ${timeLeft.minutes}m`}
                   </h3>
                   <p className="text-sm mt-1 text-gray-300">
-                    {timeLeft.totalMinutes > 30 && "Please arrive at least 30 minutes before showtime for ticket verification."}
+                    {timeLeft.dayLabel} • {timeLeft.totalMinutes > 30 && "Please arrive at least 30 minutes before showtime."}
                     {timeLeft.totalMinutes <= 30 && timeLeft.totalMinutes > 0 && "Proceed directly to your seat."}
                     {timeLeft.totalMinutes <= 0 && "The show has started - late arrivals may not be admitted."}
                   </p>

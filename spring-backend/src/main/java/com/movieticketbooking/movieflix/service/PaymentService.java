@@ -362,7 +362,6 @@ public class PaymentService {
             }
 
             try {
-
                 List<BookedSeat> bookedSeats = bookedSeatRepository.findByBookingId(booking.getId());
                 List<FoodOrder> foodOrders = foodOrderRepository.findByBookingId(booking.getId());
 
@@ -372,9 +371,12 @@ public class PaymentService {
                 byte[] ticketPdf = ticketService.generateTicketPdf(
                         booking, showtime, bookedSeats, foodOrders, movieDetails, theaterDetails);
 
+                // Properly construct the email content with theater details
+                String theaterName = theaterDetails != null ? extractTheaterName(theaterDetails) : "Unknown Theater";
+
                 String emailContent = "<p>Thank you for your booking! Your ticket details:</p>"
                         + "<p><strong>Movie:</strong> " + movieDetails.get("title") + "</p>"
-                        + "<p><strong>Theater:</strong> " + theaterDetails.get("name") + "</p>"
+                        + "<p><strong>Theater:</strong> " + theaterName + "</p>"
                         + "<p><strong>Date:</strong> " + showtime.getDate() + "</p>"
                         + "<p><strong>Time:</strong> " + showtime.getTime() + "</p>"
                         + "<p><strong>Seats:</strong> " + bookedSeats.stream()
