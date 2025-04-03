@@ -4,13 +4,12 @@ import { useState } from 'react';
 import axios from 'axios';
 import { FiDownload } from 'react-icons/fi';
 
-export default function TicketDownloadButton({ bookingRef }) {
+export default function TicketDownloadButton({ bookingRef, className }) {
   const [loading, setLoading] = useState(false);
 
   const handleDownload = async () => {
     try {
       setLoading(true);
-
       const response = await axios.get(
         `http://localhost:8080/booking/${bookingRef}/ticket`,
         {
@@ -19,7 +18,6 @@ export default function TicketDownloadButton({ bookingRef }) {
         }
       );
 
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -40,13 +38,13 @@ export default function TicketDownloadButton({ bookingRef }) {
     <button
       onClick={handleDownload}
       disabled={loading}
-      className="px-4 py-2 bg-blue-600 text-white rounded flex items-center gap-2"
+      className={`w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-blue-500/40 active:scale-[0.97] flex items-center justify-center gap-2 transform hover:-translate-y-1 ${className}`}
     >
       {loading ? (
         'Downloading...'
       ) : (
         <>
-          <FiDownload />
+          <FiDownload className="w-5 h-5" />
           Download Ticket
         </>
       )}

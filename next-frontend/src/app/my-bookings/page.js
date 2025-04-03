@@ -12,6 +12,75 @@ export default function MyOrders() {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
 
+  const parseTimeString = (timeString, dateString) => {
+    const [time, period] = timeString.split(' ');
+    const [hours, minutes] = time.split(':').map(Number);
+
+    // Convert to 24-hour format
+    let hours24 = hours;
+    if (period === 'PM' && hours < 12) {
+      hours24 += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours24 = 0;
+    }
+
+    // Parse the date parts
+    const dateParts = dateString.split('-');
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1;
+    const day = parseInt(dateParts[2]);
+
+    // Create date in local timezone
+    return new Date(year, month, day, hours24, minutes);
+  };
+
+  const calculateTimeLeft = (showDateTime) => {
+    const now = new Date();
+    const diff = showDateTime - now;
+
+    if (diff <= 0) {
+      return null; // Show has already started
+    }
+
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+
+    // Get dates in theater timezone (Asia/Kolkata)
+    const options = { timeZone: 'Asia/Kolkata' };
+    const nowInTheaterTZ = new Date(now.toLocaleString('en-US', options));
+    const showDateInTheaterTZ = new Date(showDateTime.toLocaleString('en-US', options));
+
+    // Extract just the date parts (ignoring time)
+    const nowDateStr = nowInTheaterTZ.toISOString().split('T')[0];
+    const showDateStr = showDateInTheaterTZ.toISOString().split('T')[0];
+
+    let dayLabel;
+    if (nowDateStr === showDateStr) {
+      dayLabel = 'Today';
+    } else {
+      // Check if it's tomorrow in theater timezone
+      const tomorrow = new Date(nowInTheaterTZ);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+      if (showDateStr === tomorrowStr) {
+        dayLabel = 'Tomorrow';
+      } else {
+        // Show is more than 1 day away
+        dayLabel = showDateTime.toLocaleDateString('en-US', {
+          weekday: 'long',
+          timeZone: 'Asia/Kolkata'
+        });
+      }
+    }
+
+    return {
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+      totalMinutes: totalMinutes,
+      dayLabel
+    };
+  };
+
   useEffect(() => {
     const fetchUserAndBookings = async () => {
       try {
@@ -40,19 +109,16 @@ export default function MyOrders() {
               return null;
             }
 
+            const showDateTime = parseTimeString(booking.showtime, booking.date);
             const now = new Date();
-            const showDateTime = new Date(booking.showDateTime);
-            const timeDiff = showDateTime - now;
-            const isExpired = timeDiff <= 0;
-            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const isExpired = showDateTime < now;
+            const timeStatus = calculateTimeLeft(showDateTime);
 
             return {
               ...booking,
-              timeStatus: isExpired ? 'Expired' :
-                        `${hours > 0 ? `${hours}h ` : ''}${minutes}m remaining`,
               isExpired,
-              showDateTime // Store the actual date object for easier calculations
+              showDateTime,
+              timeStatus // Store the time status object
             };
           }).filter(booking => booking !== null);
 
@@ -71,6 +137,31 @@ export default function MyOrders() {
     fetchUserAndBookings();
   }, []);
 
+  // Update time left counters periodically
+  useEffect(() => {
+    if (bookings.length === 0) return;
+
+    const timer = setInterval(() => {
+      setBookings(prevBookings =>
+        prevBookings.map(booking => {
+          if (booking.isExpired) return booking;
+
+          const now = new Date();
+          const isExpired = booking.showDateTime < now;
+          const timeStatus = calculateTimeLeft(booking.showDateTime);
+
+          return {
+            ...booking,
+            isExpired,
+            timeStatus
+          };
+        })
+      );
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [bookings]);
+
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-US', options);
@@ -86,43 +177,6 @@ export default function MyOrders() {
       return `${displayHour}:${minutes} ${period}`;
     }
     return timeString;
-  };
-
-  const calculateTimeStatus = (booking) => {
-    const now = new Date();
-    const timeDiff = booking.showDateTime - now;
-
-    if (timeDiff <= 0) {
-      return {
-        valid: false,
-        message: 'Showtime has passed',
-        status: 'expired'
-      };
-    }
-
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours < 1) {
-      return {
-        valid: true,
-        message: `${minutes}m remaining - Hurry!`,
-        status: 'urgent'
-      };
-    } else if (hours < 24) {
-      return {
-        valid: true,
-        message: `${hours}h ${minutes}m remaining - Today`,
-        status: 'upcoming'
-      };
-    } else {
-      const days = Math.floor(hours / 24);
-      return {
-        valid: true,
-        message: `${days}d ${hours % 24}h remaining`,
-        status: 'future'
-      };
-    }
   };
 
   if (loading) {
@@ -207,9 +261,9 @@ export default function MyOrders() {
         ) : (
           <div className="space-y-6">
             {bookings.map((booking) => {
-              const timeStatus = calculateTimeStatus(booking);
-              const isExpired = !timeStatus.valid;
               const formattedShowtime = formatTime(booking.showtime);
+              const isExpired = booking.isExpired;
+              const timeStatus = booking.timeStatus;
 
               return (
                 <div
@@ -278,20 +332,22 @@ export default function MyOrders() {
                           </div>
 
                           {/* Time status indicator */}
-                          <div className={`text-xs px-2 py-1 rounded-full inline-flex items-center mt-1 ${
-                            isExpired
-                              ? 'bg-gray-800 text-gray-400'
-                              : timeStatus.status === 'urgent'
-                                ? 'bg-red-900/50 text-red-300 animate-pulse'
-                                : timeStatus.status === 'upcoming'
-                                  ? 'bg-blue-900/50 text-blue-300'
-                                  : 'bg-green-900/50 text-green-300'
-                          }`}>
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {timeStatus.message}
-                          </div>
+                          {timeStatus && (
+                            <div className={`text-xs px-2 py-1 rounded-full inline-flex items-center mt-1 ${
+                              isExpired
+                                ? 'bg-gray-800 text-gray-400'
+                                : timeStatus.totalMinutes <= 30
+                                  ? 'bg-red-900/50 text-red-300 animate-pulse'
+                                  : 'bg-blue-900/50 text-blue-300'
+                            }`}>
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {timeStatus.totalMinutes <= 30
+                                ? `Hurry! ${timeStatus.minutes}m remaining`
+                                : `${timeStatus.hours}h ${timeStatus.minutes}m remaining - ${timeStatus.dayLabel}`}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex flex-col items-end">
@@ -317,15 +373,16 @@ export default function MyOrders() {
                       </div>
 
                       {/* Important notice - only for upcoming shows */}
-                      {!isExpired && (
+                      {!isExpired && timeStatus && (
                         <div className="mt-3 bg-gray-800/50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
                           <div className="flex items-start">
                             <svg className="w-4 h-4 text-yellow-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                             <p className="text-xs text-gray-300">
-                              Please arrive at least 30 minutes before showtime for ticket verification.
-                              Late arrivals may not be admitted.
+                              {timeStatus.totalMinutes <= 30
+                                ? "Proceed directly to your seat."
+                                : "Please arrive at least 30 minutes before showtime for ticket verification. Late arrivals may not be admitted."}
                             </p>
                           </div>
                         </div>
@@ -376,8 +433,33 @@ export default function MyOrders() {
                             </button>
                             <button
                               className="px-4 py-2 bg-blue-900/50 hover:bg-blue-800/50 text-blue-300 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-900/20 flex items-center"
-                              onClick={() => {
-                                alert('Download ticket functionality will be implemented here');
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(
+                                    `http://localhost:8080/booking/${booking.reference}/ticket`,
+                                    {
+                                      credentials: 'include',
+                                      headers: {
+                                        'Content-Type': 'application/pdf',
+                                      },
+                                    }
+                                  );
+
+                                  if (!response.ok) throw new Error('Failed to download ticket');
+
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `ticket_${booking.reference}.pdf`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  a.remove();
+                                  window.URL.revokeObjectURL(url);
+                                } catch (error) {
+                                  console.error('Download failed:', error);
+                                  alert('Failed to download ticket. Please try again.');
+                                }
                               }}
                             >
                               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
