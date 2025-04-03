@@ -21,8 +21,10 @@ public interface BookedSeatRepository extends JpaRepository<BookedSeat, Long> {
             "JOIN b.showtime s " +
             "WHERE s.theatreId = :theaterId " +
             "AND s.time = :showtime " +
-            "AND s.date = :date")
-    List<String> findBookedSeatsByTheaterShowtimeAndDate(
+            "AND s.date = :date " +
+            "AND s.movieId = :movieId")
+    List<String> findBookedSeatsByMovieTheaterShowtimeAndDate(
+            @Param("movieId") Long movieId,
             @Param("theaterId") String theaterId,
             @Param("showtime") String showtime,
             @Param("date") LocalDate date);

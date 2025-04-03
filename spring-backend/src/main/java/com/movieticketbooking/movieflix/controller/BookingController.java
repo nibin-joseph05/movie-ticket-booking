@@ -481,6 +481,7 @@ public class BookingController {
 
     @GetMapping("/booked-seats")
     public ResponseEntity<?> getBookedSeats(
+            @RequestParam Long movieId,
             @RequestParam String theaterId,
             @RequestParam String showtime,
             @RequestParam String date) {
@@ -488,8 +489,8 @@ public class BookingController {
         try {
             LocalDate parsedDate = LocalDate.parse(date);
 
-            List<String> bookedSeats = bookedSeatRepository.findBookedSeatsByTheaterShowtimeAndDate(
-                    theaterId, showtime, parsedDate);
+            List<String> bookedSeats = bookedSeatRepository.findBookedSeatsByMovieTheaterShowtimeAndDate(
+                    movieId, theaterId, showtime, parsedDate);
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
@@ -501,8 +502,8 @@ public class BookingController {
                     Map.of("status", "error", "message", "Invalid date format. Use yyyy-MM-dd")
             );
         } catch (Exception e) {
-            logger.error("Error fetching booked seats for theater {} showtime {} date {}",
-                    theaterId, showtime, date, e);
+            logger.error("Error fetching booked seats for movie {} theater {} showtime {} date {}",
+                    movieId, theaterId, showtime, date, e);
             return ResponseEntity.internalServerError().body(
                     Map.of("status", "error", "message", "Failed to fetch booked seats")
             );

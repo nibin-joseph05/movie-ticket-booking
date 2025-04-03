@@ -25,50 +25,32 @@ export default function BookingPage() {
 
   useEffect(() => {
       const fetchData = async () => {
-        try {
-          // Fetch booking details
-          const detailsResponse = await fetch(
-            `http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`
-          );
-          if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
-          const detailsData = await detailsResponse.json();
-          setBookingDetails(detailsData);
+          try {
+            // Fetch booking details
+            const detailsResponse = await fetch(
+              `http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`
+            );
+            if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
+            const detailsData = await detailsResponse.json();
+            setBookingDetails(detailsData);
 
-          // Fetch booked seats for this showtime
-          const seatsResponse = await fetch(
-            `http://localhost:8080/booking/booked-seats?theaterId=${theaterId}&showtime=${showtime}&date=${date}`
-          );
-          if (!seatsResponse.ok) throw new Error("Failed to fetch booked seats.");
-          const seatsData = await seatsResponse.json();
-          setBookedSeats(seatsData.bookedSeats || []);
+            // Fetch booked seats for this specific movie/showtime
+            const seatsResponse = await fetch(
+              `http://localhost:8080/booking/booked-seats?movieId=${movieId}&theaterId=${theaterId}&showtime=${showtime}&date=${date}`
+            );
+            if (!seatsResponse.ok) throw new Error("Failed to fetch booked seats.");
+            const seatsData = await seatsResponse.json();
+            setBookedSeats(seatsData.bookedSeats || []);
 
-        } catch (error) {
-          setError(error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
+          } catch (error) {
+            setError(error.message);
+          } finally {
+            setLoading(false);
+          }
+        };
 
-      fetchData();
-    }, [movieId, theaterId, showtime, date]);
-
-  // Fetch movie and theater details
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`);
-        if (!response.ok) throw new Error("Failed to fetch booking details.");
-        const data = await response.json();
-        setBookingDetails(data);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [movieId, theaterId]);
+        fetchData();
+      }, [movieId, theaterId, showtime, date]);
 
   // Handle back button click
   const handleBack = () => {
