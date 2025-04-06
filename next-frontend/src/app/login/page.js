@@ -70,10 +70,15 @@ export default function Login() {
         localStorage.setItem('user', JSON.stringify(data.user));
 
         const pendingBooking = sessionStorage.getItem('pendingBooking');
+        const returnUrl = sessionStorage.getItem('returnUrl');
+
         if (pendingBooking) {
           handlePendingBookingRedirect(data.user);
         } else if (returnUrl) {
+          sessionStorage.removeItem('returnUrl');
           window.location.href = returnUrl;
+        } else if (searchParams.get('returnUrl')) {
+          window.location.href = searchParams.get('returnUrl');
         } else {
           router.push('/');
         }
@@ -178,10 +183,15 @@ export default function Login() {
 
         if (sessionData.isLoggedIn) {
           const pendingBooking = sessionStorage.getItem('pendingBooking');
+          const returnUrl = sessionStorage.getItem('returnUrl');
+
           if (pendingBooking) {
             handlePendingBookingRedirect(sessionData.user);
           } else if (returnUrl) {
+            sessionStorage.removeItem('returnUrl');
             window.location.href = returnUrl;
+          } else if (searchParams.get('returnUrl')) {
+            window.location.href = searchParams.get('returnUrl');
           } else {
             router.push('/');
           }
@@ -212,7 +222,15 @@ export default function Login() {
     const pendingBooking = sessionStorage.getItem('pendingBooking');
     const returnUrl = searchParams.get('returnUrl');
 
-    sessionStorage.setItem('returnUrl', returnUrl || (pendingBooking ? '/booking-summary' : '/'));
+    // Store both pending booking and returnUrl in sessionStorage
+    if (pendingBooking) {
+      sessionStorage.setItem('pendingBooking', pendingBooking);
+    }
+    if (returnUrl) {
+      sessionStorage.setItem('returnUrl', returnUrl);
+    } else if (pendingBooking) {
+      sessionStorage.setItem('returnUrl', '/booking-summary');
+    }
 
     window.location.href = "http://localhost:8080/oauth2/authorization/google";
   };
