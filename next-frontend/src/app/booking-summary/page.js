@@ -128,17 +128,10 @@ export default function BookingSummaryPage() {
   const handleBack = () => {
     // Preserve all selections when going back
     const params = new URLSearchParams({
-      movie: movieId,
-      theater: theaterId,
-      date,
-      showtime,
-      category,
-      seats: seats.join(','),
-      price: price.toFixed(2),
-      food: JSON.stringify(selectedFood)
+
     });
 
-    router.push(`/showtimes?${params.toString()}`);
+    router.push(`/movies?${params.toString()}`);
   };
 
   // Calculate total price
@@ -520,7 +513,7 @@ export default function BookingSummaryPage() {
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
               </svg>
             </div>
-            <span className="font-medium hidden md:inline">Back to Showtimes</span>
+            <span className="font-medium hidden md:inline">Back to Movies</span>
           </div>
         </motion.button>
 

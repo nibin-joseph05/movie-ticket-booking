@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import Next.js router
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function Register() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl");
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -81,10 +83,12 @@ export default function Register() {
       const responseText = await response.text();
 
       if (response.ok) {
-        alert(responseText); // Show success message
-        router.push("/login"); // Redirect to login page
+        alert(responseText);
+        window.location.href = returnUrl
+          ? `/login?returnUrl=${returnUrl}`
+          : "/login";
       } else {
-        alert(`Error: ${responseText}`); // Show error message
+        alert(`Error: ${responseText}`);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -94,18 +98,23 @@ export default function Register() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
-      {/* Header */}
       <Header />
 
-      {/* Registration Form */}
       <section className="flex flex-grow items-center justify-center px-4">
         <div className="bg-gray-900 p-10 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700">
           <h2 className="text-3xl font-bold text-center text-red-500 mb-6">
             Create Your Account
           </h2>
 
+          {returnUrl && returnUrl.includes("booking-summary") && (
+            <div className="mb-6 p-3 bg-purple-900/30 border border-purple-500 rounded-lg">
+              <p className="text-center">
+                Complete registration to proceed with your booking
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* First Name & Last Name */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-300 mb-1">First Name</label>
@@ -138,7 +147,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Email & Phone Number */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-300 mb-1">Email</label>
@@ -171,7 +179,6 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Password & Confirm Password */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-300 mb-1">Password</label>
@@ -202,8 +209,6 @@ export default function Register() {
               </div>
             </div>
 
-
-            {/* Photo Upload */}
             <div>
               <label className="block text-gray-300 mb-1">Upload Photo</label>
               <input
@@ -215,15 +220,16 @@ export default function Register() {
               />
             </div>
 
-            {/* Register Button */}
-            <button type="submit" className="w-full bg-red-500 py-3 rounded-lg text-lg font-semibold">
+            <button
+              type="submit"
+              className="w-full bg-red-500 py-3 rounded-lg text-lg font-semibold hover:bg-red-600 transition"
+            >
               Register
             </button>
           </form>
         </div>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
