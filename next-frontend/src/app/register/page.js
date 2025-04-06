@@ -40,15 +40,15 @@ export default function Register() {
 
       sessionStorage.removeItem('prefilledEmail');
 
-      if (fromProvider === 'google') {
-        const generatedPassword = generateStrongPassword();
-        setFormData(prev => ({
-          ...prev,
-          password: generatedPassword,
-          confirmPassword: generatedPassword
-        }));
-        sessionStorage.removeItem('fromProvider');
-      }
+//      if (fromProvider === 'google') {
+//        const generatedPassword = generateStrongPassword();
+//        setFormData(prev => ({
+//          ...prev,
+//          password: generatedPassword,
+//          confirmPassword: generatedPassword
+//        }));
+//        sessionStorage.removeItem('fromProvider');
+//      }
     }
   }, []);
 
