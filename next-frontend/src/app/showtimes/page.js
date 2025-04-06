@@ -25,8 +25,8 @@ export default function Showtimes() {
   const [fetchError, setFetchError] = useState(null);
   const [seatPrices, setSeatPrices] = useState([]);
 
-  // Helper function to check if showtime has passed
-  const isShowtimePassed = (showtime, date) => {
+  // Helper function to check showtime status
+  const getShowtimeStatus = (showtime, date) => {
     const now = new Date();
     const [time, period] = showtime.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
@@ -39,12 +39,21 @@ export default function Showtimes() {
     const showDate = new Date(date);
     showDate.setHours(hours, minutes, 0, 0);
 
-    return showDate < now;
+    // Assuming movie duration is 3 hours (180 minutes)
+    const showEndTime = new Date(showDate.getTime() + 180 * 60000);
+
+    if (now < showDate) {
+      return 'upcoming'; // Show hasn't started yet
+    } else if (now >= showDate && now <= showEndTime) {
+      return 'running'; // Show is currently running
+    } else {
+      return 'ended'; // Show has ended
+    }
   };
 
-  // Filter out past showtimes
+  // Filter out only ended showtimes
   const validShowtimes = showtimes.filter(show =>
-    !isShowtimePassed(show.time, selectedDate)
+    getShowtimeStatus(show.time, selectedDate) !== 'ended'
   );
 
   useEffect(() => {
@@ -272,14 +281,16 @@ export default function Showtimes() {
         ) : validShowtimes.length > 0 ? (
           <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-8">
             {validShowtimes.map((show, index) => {
-              const isPast = isShowtimePassed(show.time, selectedDate);
+              const status = getShowtimeStatus(show.time, selectedDate);
+              const isRunning = status === 'running';
+              const isUpcoming = status === 'upcoming';
 
               return (
                 <motion.div
                   key={index}
                   className={`relative backdrop-blur-lg p-6 rounded-2xl shadow-xl border ${
-                    isPast
-                      ? 'border-gray-700 bg-gray-900/50'
+                    isRunning
+                      ? 'border-yellow-500 bg-yellow-900/20'
                       : 'border-gray-800 hover:border-red-500 bg-gray-900/70'
                   }`}
                 >
@@ -287,16 +298,17 @@ export default function Showtimes() {
                     <span className="text-2xl font-bold tracking-wide">
                       {show.time}
                     </span>
-                    {isPast && (
-                      <span className="text-xs bg-red-900/50 text-red-200 px-2 py-1 rounded">
-                        SHOW ENDED
+                    {isRunning && (
+                      <span className="text-xs bg-yellow-900/50 text-yellow-200 px-2 py-1 rounded">
+                        SHOW RUNNING
                       </span>
                     )}
                   </div>
 
-                  {isPast ? (
-                    <div className="text-center py-4 text-gray-500">
-                      This showtime has already passed
+                  {isRunning ? (
+                    <div className="text-center py-4">
+                      <p className="text-yellow-400 mb-2">This show is currently running</p>
+                      <p className="text-gray-400 text-sm">Booking not available during the show</p>
                     </div>
                   ) : (
                     <>
@@ -334,22 +346,24 @@ export default function Showtimes() {
                         )}
                       </div>
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`mt-6 w-full px-6 py-3 rounded-xl font-bold text-lg ${
-                          !selectedCategory?.type
-                            ? "bg-gray-700 text-gray-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900"
-                        }`}
-                        onClick={() => {
-                          setActiveShowtime(show);
-                          setIsSeatPopupOpen(true);
-                        }}
-                        disabled={!selectedCategory?.type}
-                      >
-                        Book Now
-                      </motion.button>
+                      {isUpcoming && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`mt-6 w-full px-6 py-3 rounded-xl font-bold text-lg ${
+                            !selectedCategory?.type
+                              ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                              : "bg-gradient-to-r from-red-600 to-red-800 hover:from-red-700 hover:to-red-900"
+                          }`}
+                          onClick={() => {
+                            setActiveShowtime(show);
+                            setIsSeatPopupOpen(true);
+                          }}
+                          disabled={!selectedCategory?.type}
+                        >
+                          Book Now
+                        </motion.button>
+                      )}
                     </>
                   )}
                 </motion.div>
