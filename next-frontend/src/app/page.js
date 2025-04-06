@@ -11,22 +11,40 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkUser = () => {
-      const user = JSON.parse(localStorage.getItem("user"));
-      if (user && user.firstName) {
-        setUserName(user.firstName);
-        setIsLoggedIn(true);
-      } else {
-        setUserName("");
-        setIsLoggedIn(false);
+    const checkSession = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/user/check-session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        if (data.isLoggedIn) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          setUserName(data.user.firstName);
+          setIsLoggedIn(true);
+        } else {
+          localStorage.removeItem('user');
+          setUserName("");
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
       }
     };
 
-    // Check user on initial load
-    checkUser();
+    // Check on initial load
+    checkSession();
 
-    // Add event listener for storage changes
-    window.addEventListener('storage', checkUser);
+    // Also check after Google login redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('from') && params.get('from') === 'google') {
+      checkSession();
+      // Clean the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Listen for storage changes (from other tabs)
+    window.addEventListener('storage', checkSession);
 
     const fetchMovies = async () => {
       try {
@@ -41,41 +59,25 @@ export default function Home() {
 
     fetchMovies();
 
-    // Cleanup event listener
     return () => {
-      window.removeEventListener('storage', checkUser);
+      window.removeEventListener('storage', checkSession);
     };
   }, []);
 
-  // Add this to handle logout from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'user') {
-        const user = JSON.parse(e.newValue);
-        if (!user) {
-          setUserName("");
-          setIsLoggedIn(false);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const handleLogout = () => {
+    setUserName("");
+    setIsLoggedIn(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white">
-      <Header onLogout={() => {
-        setUserName("");
-        setIsLoggedIn(false);
-      }} />
+      <Header onLogout={handleLogout} />
 
       {isLoggedIn && userName && (
         <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
           🎉 Welcome, <span className="text-yellow-300">{userName}!</span> Book the best movies now!
         </div>
       )}
-
 
       <section className="relative w-full h-[60vh] flex items-center justify-center">
         <img
@@ -99,7 +101,6 @@ export default function Home() {
         </h3>
 
         {movies.length === 0 ? (
-          // **No movies available message**
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
             <h2 className="text-4xl font-extrabold text-red-500 mt-4 animate-bounce">
               Oops! No Movies Available
@@ -108,9 +109,7 @@ export default function Home() {
               Currently, we couldn't find any movies to display. <br />
               Please check back later or explore other categories.
             </p>
-
           </div>
-
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {movies.map((movie) => (

@@ -7,7 +7,7 @@ import { FaCrosshairs } from "react-icons/fa";
 import { debounce } from "lodash";
 import { usePathname } from "next/navigation";
 
-export default function Header() {
+export default function Header({ onLogout }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -16,8 +16,39 @@ export default function Header() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) setIsLoggedIn(true);
+    const checkSession = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/user/check-session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        if (data.isLoggedIn) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          setIsLoggedIn(true);
+        } else {
+          localStorage.removeItem('user');
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+      }
+    };
+
+    // Check on initial load
+    checkSession();
+
+    // Also check after Google login redirect
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('from') && params.get('from') === 'google') {
+      checkSession();
+      // Clean the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Listen for storage changes (from other tabs)
+    window.addEventListener('storage', checkSession);
+    return () => window.removeEventListener('storage', checkSession);
   }, []);
 
   const handleLogout = async () => {
@@ -29,6 +60,7 @@ export default function Header() {
 
       localStorage.removeItem("user");
       setIsLoggedIn(false);
+      if (onLogout) onLogout();
       router.push("/");
     } catch (error) {
       console.error("Logout failed", error);
@@ -36,32 +68,32 @@ export default function Header() {
   };
 
   const fetchMovies = debounce(async (query) => {
-      if (query.length > 2) {
-        setLoading(true);
-        try {
-          const response = await fetch(`http://localhost:8080/movies/search?name=${query}`);
-          const data = await response.json();
-          setSearchResults(data.length ? data.slice(0, 5) : []);
-        } catch (error) {
-          console.error("Error fetching search results", error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setSearchResults([]);
+    if (query.length > 2) {
+      setLoading(true);
+      try {
+        const response = await fetch(`http://localhost:8080/movies/search?name=${query}`);
+        const data = await response.json();
+        setSearchResults(data.length ? data.slice(0, 5) : []);
+      } catch (error) {
+        console.error("Error fetching search results", error);
+      } finally {
+        setLoading(false);
       }
-    }, 300);
+    } else {
+      setSearchResults([]);
+    }
+  }, 300);
 
-    const handleSearch = (e) => {
-      const query = e.target.value;
-      setSearchQuery(query);
-      fetchMovies(query);
-    };
+  const handleSearch = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    fetchMovies(query);
+  };
 
   const handleMovieClick = (movieId) => {
     router.push(`/movies/${movieId}`);
-    setSearchQuery(""); // Clear search input
-    setSearchResults([]); // Hide search results
+    setSearchQuery("");
+    setSearchResults([]);
   };
 
   return (
@@ -102,7 +134,6 @@ export default function Header() {
                       alt={movie.title}
                       className="w-16 h-24 object-cover rounded-lg mr-3"
                     />
-
                     <div>
                       <p className="font-semibold">{movie.title}</p>
                       <p className="text-gray-500 text-sm">{movie.year}</p>
@@ -118,20 +149,20 @@ export default function Header() {
 
         {/* Navigation Links */}
         <nav className="hidden md:flex space-x-6 text-lg">
-          <a href="/" className="hover:text-red-500 transition-all duration-200">
+          <Link href="/" className="hover:text-red-500 transition-all duration-200">
             Home
-          </a>
-          <a href="/movies" className="hover:text-red-500 transition-all duration-200">
+          </Link>
+          <Link href="/movies" className="hover:text-red-500 transition-all duration-200">
             Movies
-          </a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">
-           My Account
-          </a>
-          <a href="/my-bookings" className="hover:text-red-500 transition-all duration-200">
+          </Link>
+          <Link href="#" className="hover:text-red-500 transition-all duration-200">
+            My Account
+          </Link>
+          <Link href="/my-bookings" className="hover:text-red-500 transition-all duration-200">
             My Bookings
-          </a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">Plays</a>
-          <a href="#" className="hover:text-red-500 transition-all duration-200">Sports</a>
+          </Link>
+          <Link href="#" className="hover:text-red-500 transition-all duration-200">Plays</Link>
+          <Link href="#" className="hover:text-red-500 transition-all duration-200">Sports</Link>
         </nav>
 
         {/* User Actions */}
@@ -143,7 +174,7 @@ export default function Header() {
               bg-blue-600 border-2 border-white text-white
               ${
                 pathname === "/theatre"
-                  ? "cursor-not-allowed opacity-60"  // Reducing opacity for disabled state
+                  ? "cursor-not-allowed opacity-60"
                   : "hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
               }`}
           >
