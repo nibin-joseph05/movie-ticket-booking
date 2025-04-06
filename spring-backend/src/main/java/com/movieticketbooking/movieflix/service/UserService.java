@@ -59,6 +59,11 @@ public class UserService {
         return false;
     }
 
+    public User saveUserWithoutEncodingPassword(User user) {
+        return userRepository.save(user);
+    }
+
+
 
     public BCryptPasswordEncoder getPasswordEncoder() {
         return passwordEncoder;

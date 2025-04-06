@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,10 +13,93 @@ export default function Login() {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [showRegistrationPrompt, setShowRegistrationPrompt] = useState(false);
+  const [errorModal, setErrorModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    action: null
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("returnUrl");
   const isOtpComplete = otp.every((digit) => digit !== "");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const message = params.get('message');
+    const email = params.get('email');
+    const from = params.get('from');
+
+    if (error === 'no_account' && email) {
+      const displayMessage = message || "No account found with this Google email. Please register.";
+
+      sessionStorage.setItem('prefilledEmail', email);
+
+      if (from === 'google') {
+        sessionStorage.setItem('fromProvider', 'google');
+      }
+
+      setShowRegistrationPrompt(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Check session on component mount
+    checkSession();
+  }, []);
+
+  const showError = (title, message, action = null) => {
+    setErrorModal({
+      show: true,
+      title,
+      message,
+      action
+    });
+  };
+
+  const checkSession = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/user/check-session', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+
+      if (data.isLoggedIn) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        const pendingBooking = sessionStorage.getItem('pendingBooking');
+        if (pendingBooking) {
+          handlePendingBookingRedirect(data.user);
+        } else if (returnUrl) {
+          window.location.href = returnUrl;
+        } else {
+          router.push('/');
+        }
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
+    }
+  };
+
+  const handlePendingBookingRedirect = (user) => {
+    const bookingData = JSON.parse(sessionStorage.getItem('pendingBooking'));
+    sessionStorage.removeItem('pendingBooking');
+
+    const queryParams = new URLSearchParams({
+      movie: bookingData.movieId,
+      theater: bookingData.theaterId,
+      showtime: bookingData.showtime,
+      category: bookingData.category,
+      seats: bookingData.seats.join(','),
+      price: bookingData.price.toFixed(2),
+      date: bookingData.date,
+      food: JSON.stringify(bookingData.food)
+    });
+
+    window.location.href = `/booking-summary?${queryParams.toString()}`;
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -36,11 +119,10 @@ export default function Login() {
       } else if (response.status === 404) {
         setShowRegistrationPrompt(true);
       } else {
-        alert(data.error || "Login failed");
+        showError('Login Failed', data.error || "Login failed");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      alert("An error occurred. Please try again.");
+      showError('Error', "An error occurred. Please try again.");
     } finally {
       setIsSendingOtp(false);
     }
@@ -87,41 +169,52 @@ export default function Login() {
       );
 
       if (response.status === 200) {
-        const userData = response.data;
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem('user', JSON.stringify(response.data));
 
-        const pendingBooking = sessionStorage.getItem("pendingBooking");
-        if (pendingBooking) {
-          sessionStorage.removeItem("pendingBooking");
-          const bookingData = JSON.parse(pendingBooking);
-          const queryParams = new URLSearchParams({
-            movie: bookingData.movieId,
-            theater: bookingData.theaterId,
-            showtime: bookingData.showtime,
-            category: bookingData.category,
-            seats: bookingData.seats.join(","),
-            price: bookingData.price.toFixed(2),
-            date: bookingData.date,
-            food: JSON.stringify(bookingData.food)
-          });
-          window.location.href = `/booking-summary?${queryParams.toString()}`;
-        } else if (returnUrl) {
-          window.location.href = returnUrl;
+        const sessionResponse = await fetch('http://localhost:8080/user/check-session', {
+          credentials: 'include'
+        });
+        const sessionData = await sessionResponse.json();
+
+        if (sessionData.isLoggedIn) {
+          const pendingBooking = sessionStorage.getItem('pendingBooking');
+          if (pendingBooking) {
+            handlePendingBookingRedirect(sessionData.user);
+          } else if (returnUrl) {
+            window.location.href = returnUrl;
+          } else {
+            router.push('/');
+          }
         } else {
-          router.push("/");
+          showError('Session Error', 'Login failed. Please try again.');
         }
       }
     } catch (error) {
-      alert(error.response?.data?.error || "OTP Verification Failed");
+      showError(
+        'Verification Failed',
+        error.response?.data?.error || "OTP Verification Failed"
+      );
     }
   };
 
   const handleOtpVerification = async () => {
     if (!isOtpComplete) {
-      alert("Please enter the complete OTP before verifying.");
+      showError('Incomplete OTP', 'Please enter the complete OTP before verifying.');
       return;
     }
     await verifyOtp();
+  };
+
+  const handleGoogleLogin = () => {
+    setIsGoogleLoading(true);
+    setIsLoading(true);
+
+    const pendingBooking = sessionStorage.getItem('pendingBooking');
+    const returnUrl = searchParams.get('returnUrl');
+
+    sessionStorage.setItem('returnUrl', returnUrl || (pendingBooking ? '/booking-summary' : '/'));
+
+    window.location.href = "http://localhost:8080/oauth2/authorization/google";
   };
 
   return (
@@ -135,24 +228,71 @@ export default function Login() {
           </h2>
 
           {showRegistrationPrompt && (
-            <div className="mb-6 p-4 bg-blue-900/30 border border-blue-500 rounded-lg">
-              <p className="text-center mb-3">No account found with this email.</p>
-              <button
-                onClick={handleRegisterRedirect}
-                className="w-full bg-blue-600 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                Register Now
-              </button>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+                <h3 className="text-xl font-bold text-red-500 mb-4">Account Not Found</h3>
+                <p className="mb-4">
+                  {sessionStorage.getItem('prefilledEmail')
+                    ? `No account found for ${sessionStorage.getItem('prefilledEmail')}. Please register.`
+                    : "No account found with this email. Please register."}
+                </p>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowRegistrationPrompt(false)}
+                    className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowRegistrationPrompt(false);
+                      handleRegisterRedirect();
+                    }}
+                    className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+                  >
+                    Register Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {errorModal.show && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+                <h3 className="text-xl font-bold text-red-500 mb-4">{errorModal.title}</h3>
+                <p className="mb-4">{errorModal.message}</p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setErrorModal({ show: false });
+                      if (errorModal.action) errorModal.action();
+                    }}
+                    className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
           {!isOtpSent && (
             <button
-              onClick={() => console.log("Logging in with Google")}
-              className="w-full flex items-center justify-center bg-white text-gray-900 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-200 transition-all duration-300"
+              onClick={handleGoogleLogin}
+              disabled={isGoogleLoading}
+              className={`w-full flex items-center justify-center bg-white text-gray-900 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-200 transition-all duration-300 ${
+                isGoogleLoading ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              <Image src="/google.png" alt="Google" width={20} height={18} className="mr-2" />
-              Continue with Google
+              {isGoogleLoading ? (
+                "Processing..."
+              ) : (
+                <>
+                  <Image src="/google.png" alt="Google" width={20} height={18} className="mr-2" />
+                  Continue with Google
+                </>
+              )}
             </button>
           )}
 
@@ -259,6 +399,12 @@ export default function Login() {
           )}
         </div>
       </section>
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+        </div>
+      )}
 
       <Footer />
     </div>

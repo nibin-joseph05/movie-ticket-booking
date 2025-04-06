@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -20,6 +20,55 @@ export default function Register() {
   });
 
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState({
+    show: false,
+    title: '',
+    message: '',
+    action: null
+  });
+
+  useEffect(() => {
+    const prefilledEmail = sessionStorage.getItem('prefilledEmail');
+    const fromProvider = sessionStorage.getItem('fromProvider');
+
+    if (prefilledEmail) {
+      setFormData(prev => ({
+        ...prev,
+        email: prefilledEmail
+      }));
+
+      sessionStorage.removeItem('prefilledEmail');
+
+      if (fromProvider === 'google') {
+        const generatedPassword = generateStrongPassword();
+        setFormData(prev => ({
+          ...prev,
+          password: generatedPassword,
+          confirmPassword: generatedPassword
+        }));
+        sessionStorage.removeItem('fromProvider');
+      }
+    }
+  }, []);
+
+  const generateStrongPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const showError = (title, message, action = null) => {
+    setErrorModal({
+      show: true,
+      title,
+      message,
+      action
+    });
+  };
 
   const validateForm = () => {
     let newErrors = {};
@@ -64,6 +113,8 @@ export default function Register() {
     e.preventDefault();
     if (!validateForm()) return;
 
+    setIsLoading(true);
+
     const formDataToSend = new FormData();
     formDataToSend.append("firstName", formData.firstName);
     formDataToSend.append("lastName", formData.lastName);
@@ -83,16 +134,16 @@ export default function Register() {
       const responseText = await response.text();
 
       if (response.ok) {
-        alert(responseText);
         window.location.href = returnUrl
           ? `/login?returnUrl=${returnUrl}`
           : "/login";
       } else {
-        alert(`Error: ${responseText}`);
+        showError('Registration Failed', responseText);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert("Failed to register user.");
+      showError('Error', "Failed to register user. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,6 +162,26 @@ export default function Register() {
               <p className="text-center">
                 Complete registration to proceed with your booking
               </p>
+            </div>
+          )}
+
+          {errorModal.show && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+                <h3 className="text-xl font-bold text-red-500 mb-4">{errorModal.title}</h3>
+                <p className="mb-4">{errorModal.message}</p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setErrorModal({ show: false });
+                      if (errorModal.action) errorModal.action();
+                    }}
+                    className="px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+                  >
+                    OK
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -223,12 +294,19 @@ export default function Register() {
             <button
               type="submit"
               className="w-full bg-red-500 py-3 rounded-lg text-lg font-semibold hover:bg-red-600 transition"
+              disabled={isLoading}
             >
-              Register
+              {isLoading ? "Registering..." : "Register"}
             </button>
           </form>
         </div>
       </section>
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+        </div>
+      )}
 
       <Footer />
     </div>
