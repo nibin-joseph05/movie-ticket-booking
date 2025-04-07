@@ -27,6 +27,11 @@ export default function Register() {
     message: '',
     action: null
   });
+  const [emailStatus, setEmailStatus] = useState({
+    isValidFormat: false,
+    isDomainValid: false,
+    isChecking: false
+  });
 
   useEffect(() => {
     const prefilledEmail = sessionStorage.getItem('prefilledEmail');
@@ -51,6 +56,42 @@ export default function Register() {
 //      }
     }
   }, []);
+
+  // Email validation with debouncing
+  useEffect(() => {
+    const validateEmail = async () => {
+      const email = formData.email.trim();
+
+      // Basic format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const isValidFormat = emailRegex.test(email);
+      setEmailStatus(prev => ({ ...prev, isValidFormat }));
+
+      if (!isValidFormat || !email) {
+        setEmailStatus(prev => ({ ...prev, isDomainValid: false }));
+        return;
+      }
+
+      // Domain validation with debouncing
+      setEmailStatus(prev => ({ ...prev, isChecking: true }));
+
+      try {
+        const domain = email.split('@')[1];
+        const response = await fetch(`https://dns.google/resolve?name=${domain}&type=MX`);
+        const data = await response.json();
+        const isDomainValid = data.Answer && data.Answer.length > 0;
+        setEmailStatus(prev => ({ ...prev, isDomainValid }));
+      } catch (error) {
+        console.error("Domain validation error:", error);
+        setEmailStatus(prev => ({ ...prev, isDomainValid: false }));
+      } finally {
+        setEmailStatus(prev => ({ ...prev, isChecking: false }));
+      }
+    };
+
+    const timer = setTimeout(validateEmail, 500);
+    return () => clearTimeout(timer);
+  }, [formData.email]);
 
   const generateStrongPassword = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
@@ -81,8 +122,10 @@ export default function Register() {
       newErrors.lastName = "Only letters allowed.";
     }
 
-    if (!/^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(formData.email)) {
-      newErrors.email = "Enter a valid email.";
+    if (!emailStatus.isValidFormat) {
+      newErrors.email = "Enter a valid email address.";
+    } else if (!emailStatus.isDomainValid) {
+      newErrors.email = "The email domain doesn't exist.";
     }
 
     if (!/^\d{10}$/.test(formData.phoneNumber)) {
@@ -229,9 +272,17 @@ export default function Register() {
                   className="w-full px-4 py-3 text-black bg-gray-100 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md"
                   required
                 />
-                {errors.email && (
-                  <p className="text-red-400 text-sm">{errors.email}</p>
-                )}
+                <div className="mt-1">
+                  {emailStatus.isChecking && (
+                    <p className="text-yellow-400 text-sm">Checking email domain...</p>
+                  )}
+                  {!emailStatus.isChecking && errors.email && (
+                    <p className="text-red-400 text-sm">{errors.email}</p>
+                  )}
+                  {!emailStatus.isChecking && emailStatus.isValidFormat && emailStatus.isDomainValid && (
+                    <p className="text-green-400 text-sm">Email appears valid</p>
+                  )}
+                </div>
               </div>
 
               <div>
