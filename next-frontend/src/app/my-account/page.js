@@ -19,6 +19,7 @@ export default function AccountPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showEnlargedPhoto, setShowEnlargedPhoto] = useState(false);
 
   // Form states
   const [editMode, setEditMode] = useState(false);
@@ -58,7 +59,7 @@ export default function AccountPage() {
       }
     }, [passwordSuccess]);
 
-    
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -496,8 +497,9 @@ export default function AccountPage() {
                   <img
                     src={`http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
                     alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-red-500/50 shadow-lg"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-red-500/50 shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                     onError={() => setImageError(true)}
+                    onClick={() => setShowEnlargedPhoto(true)}
                   />
                 ) : (
                   <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-600 to-pink-600 text-white flex items-center justify-center text-5xl font-bold shadow-lg">
@@ -652,6 +654,29 @@ export default function AccountPage() {
           )}
         </div>
       </div>
+
+
+      {showEnlargedPhoto && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowEnlargedPhoto(false)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <img
+              src={`http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
+              alt="Enlarged Profile"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+            <button
+              className="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-7 flex items-center justify-center text-2xl shadow-lg transition-all"
+              onClick={() => setShowEnlargedPhoto(false)}
+              aria-label="Close enlarged photo"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
