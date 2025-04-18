@@ -39,6 +39,26 @@ export default function AccountPage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
+
+  useEffect(() => {
+      if (success) {
+        const timer = setTimeout(() => {
+          setSuccess('');
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    }, [success]);
+
+    useEffect(() => {
+      if (passwordSuccess) {
+        const timer = setTimeout(() => {
+          setPasswordSuccess('');
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+    }, [passwordSuccess]);
+
+    
   useEffect(() => {
     const fetchUserData = async () => {
       try {
