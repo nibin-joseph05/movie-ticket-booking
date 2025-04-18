@@ -6,10 +6,21 @@ import com.movieticketbooking.movieflix.models.User;
 import com.movieticketbooking.movieflix.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -17,7 +28,6 @@ import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import jakarta.servlet.http.HttpSession;
@@ -218,6 +228,147 @@ public class UserController {
         }
 
         response.sendRedirect("http://localhost:3000" + returnUrl);
+    }
+
+    @GetMapping("/photo")
+    public ResponseEntity<Resource> getUserPhoto(@RequestParam String path) throws IOException {
+        try {
+            Path filePath = Paths.get(path);
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Resource resource = new FileSystemResource(filePath);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+    @GetMapping("/details")
+    public ResponseEntity<?> getUserDetails(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not logged in"));
+        }
+
+        // Get fresh data from DB
+        Optional<User> dbUser = userService.findByEmail(user.getEmail());
+        if (dbUser.isEmpty()) {
+            session.invalidate();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
+        }
+
+        User currentUser = dbUser.get();
+        return ResponseEntity.ok(Map.of(
+                "id", currentUser.getUserId(),
+                "firstName", currentUser.getFirstName(),
+                "lastName", currentUser.getLastName(),
+                "email", currentUser.getEmail(),
+                "phoneNumber", currentUser.getPhoneNumber(),
+                "photoPath", currentUser.getUserPhotoPath()
+        ));
+    }
+
+    @PutMapping(value = "/update", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> updateUser(
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName,
+            @RequestParam(value = "phoneNumber", required = false) String phoneNumber,
+            @RequestParam(value = "userPhotoPath", required = false) MultipartFile file,
+            HttpSession session) {
+
+        User sessionUser = (User) session.getAttribute("user");
+        if (sessionUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not logged in"));
+        }
+
+        Optional<User> optionalUser = userService.findByEmail(sessionUser.getEmail());
+        if (optionalUser.isEmpty()) {
+            session.invalidate();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
+        }
+
+        User user = optionalUser.get();
+
+        if (firstName != null) user.setFirstName(firstName);
+        if (lastName != null) user.setLastName(lastName);
+        if (phoneNumber != null) {
+            // Check if phone number is already taken by another user
+            Optional<User> phoneUser = userService.findByPhoneNumber(phoneNumber);
+            if (phoneUser.isPresent() && phoneUser.get().getUserId() != user.getUserId()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phone number already in use"));
+            }
+            user.setPhoneNumber(phoneNumber);
+        }
+
+        if (file != null && !file.isEmpty()) {
+            try {
+                // Delete old photo if exists
+                if (user.getUserPhotoPath() != null) {
+                    File oldPhoto = new File(user.getUserPhotoPath());
+                    if (oldPhoto.exists()) {
+                        oldPhoto.delete();
+                    }
+                }
+
+                File uploadDir = new File(UPLOAD_DIR);
+                if (!uploadDir.exists()) {
+                    uploadDir.mkdirs();
+                }
+
+                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                File destinationFile = new File(UPLOAD_DIR + fileName);
+                file.transferTo(destinationFile);
+
+                user.setUserPhotoPath(UPLOAD_DIR + fileName);
+            } catch (IOException e) {
+                return ResponseEntity.status(500).body(Map.of("error", "Failed to upload photo"));
+            }
+        }
+
+        userService.saveUserWithoutEncodingPassword(user);
+        session.setAttribute("user", user);
+
+        return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody Map<String, String> passwordRequest,
+            HttpSession session) {
+
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not logged in"));
+        }
+
+        String currentPassword = passwordRequest.get("currentPassword");
+        String newPassword = passwordRequest.get("newPassword");
+
+        if (currentPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Both current and new password are required"));
+        }
+
+        Optional<User> optionalUser = userService.findByEmail(user.getEmail());
+        if (optionalUser.isEmpty()) {
+            session.invalidate();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
+        }
+
+        User dbUser = optionalUser.get();
+
+        if (!userService.getPasswordEncoder().matches(currentPassword, dbUser.getPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Current password is incorrect"));
+        }
+
+        dbUser.setPassword(userService.getPasswordEncoder().encode(newPassword));
+        userService.saveUser(dbUser);
+
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 
 

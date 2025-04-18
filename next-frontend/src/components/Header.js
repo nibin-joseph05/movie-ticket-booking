@@ -101,7 +101,7 @@ export default function Header({ onLogout }) {
       <div className="container mx-auto flex justify-between items-center px-6">
         {/* Logo */}
         <div className="flex items-center space-x-3">
-          <Image src="/logo.webp" alt="Logo" width={50} height={50} />
+          <img src="/logo.webp" alt="Logo" className="w-[50px] h-auto" />
           <span className="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg tracking-wide">
             MovieFlix
           </span>
@@ -155,7 +155,7 @@ export default function Header({ onLogout }) {
           <Link href="/movies" className="hover:text-red-500 transition-all duration-200">
             Movies
           </Link>
-          <Link href="#" className="hover:text-red-500 transition-all duration-200">
+          <Link href="/my-account" className="hover:text-red-500 transition-all duration-200">
             My Account
           </Link>
           <Link href="/my-bookings" className="hover:text-red-500 transition-all duration-200">

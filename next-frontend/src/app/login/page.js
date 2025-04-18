@@ -307,7 +307,7 @@ export default function Login() {
                 "Processing..."
               ) : (
                 <>
-                  <Image src="/google.png" alt="Google" width={20} height={18} className="mr-2" />
+                  <img src="/google.png" alt="Google" className="mr-2 w-[20px] h-auto" />
                   Continue with Google
                 </>
               )}
