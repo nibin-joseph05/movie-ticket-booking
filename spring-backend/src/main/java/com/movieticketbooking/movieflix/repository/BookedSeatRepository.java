@@ -28,4 +28,6 @@ public interface BookedSeatRepository extends JpaRepository<BookedSeat, Long> {
             @Param("theaterId") String theaterId,
             @Param("showtime") String showtime,
             @Param("date") LocalDate date);
+
+    void deleteAll(Iterable<? extends BookedSeat> entities);
 }

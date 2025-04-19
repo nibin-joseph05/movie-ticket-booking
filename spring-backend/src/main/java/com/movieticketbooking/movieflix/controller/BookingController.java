@@ -449,6 +449,12 @@ public class BookingController {
             booking.setPaymentStatus("CANCELLED");
             bookingRepository.save(booking);
 
+
+            List<BookedSeat> seatsToRelease = bookedSeatRepository.findByBookingId(booking.getId());
+            if (!seatsToRelease.isEmpty()) {
+                bookedSeatRepository.deleteAll(seatsToRelease);
+            }
+
             // 5. Update payment status if exists
             Payment payment = paymentRepository.findByBookingId(booking.getId());
             if (payment != null && "SUCCESSFUL".equals(payment.getStatus())) {
