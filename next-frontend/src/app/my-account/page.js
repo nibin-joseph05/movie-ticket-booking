@@ -327,7 +327,7 @@ export default function AccountPage() {
       <Header onLogout={handleLogout} />
 
       {isLoggedIn && userData.firstName && (
-        <div className="text-center py-4 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
+        <div className="text-center py-3 text-lg font-bold bg-gradient-to-r from-red-600 to-pink-500 text-white shadow-lg rounded-b-lg">
           🎉 Welcome back, <span className="text-yellow-300">{userData.firstName}!</span>
         </div>
       )}
