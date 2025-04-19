@@ -32,23 +32,27 @@ export default function Login() {
     const message = params.get('message');
     const email = params.get('email');
     const from = params.get('from');
+    const state = params.get('state');
+
 
     if (error === 'no_account' && email) {
-      const displayMessage = message || "No account found with this Google email. Please register.";
+            const displayMessage = message || "No account found with this Google email. Please register.";
 
-      sessionStorage.setItem('prefilledEmail', email);
+            sessionStorage.setItem('prefilledEmail', email);
 
-      if (from === 'google') {
-        sessionStorage.setItem('fromProvider', 'google');
-      }
+            // Store state for registration redirect
+            if (state) {
+                sessionStorage.setItem('oauthState', state);
+            }
 
-      setShowRegistrationPrompt(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+            if (from === 'google') {
+                sessionStorage.setItem('fromProvider', 'google');
+            }
 
-    // Check session on component mount
-    checkSession();
-  }, []);
+            setShowRegistrationPrompt(true);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
 
   const showError = (title, message, action = null) => {
     setErrorModal({
@@ -134,23 +138,33 @@ export default function Login() {
   };
 
   const handleRegisterRedirect = () => {
-    const pendingBooking = sessionStorage.getItem("pendingBooking");
-    if (pendingBooking) {
-      const bookingData = JSON.parse(pendingBooking);
+      const pendingBooking = sessionStorage.getItem("pendingBooking");
+      const oauthState = sessionStorage.getItem("oauthState");
+
+      // Build return URL from OAuth state or original returnUrl
+      let returnPath = returnUrl || "/";
+      try {
+          if (oauthState) {
+              const stateObj = JSON.parse(decodeURIComponent(oauthState));
+              returnPath = stateObj.returnUrl || "/";
+          }
+      } catch (e) {
+          console.error("Error parsing OAuth state:", e);
+      }
+
       const queryParams = new URLSearchParams({
-        movie: bookingData.movieId,
-        theater: bookingData.theaterId,
-        showtime: bookingData.showtime,
-        category: bookingData.category,
-        seats: bookingData.seats.join(","),
-        price: bookingData.price.toFixed(2),
-        date: bookingData.date,
-        food: JSON.stringify(bookingData.food)
+          returnUrl: returnPath,
+          email: sessionStorage.getItem('prefilledEmail'),
+          ...(pendingBooking && {
+              booking: sessionStorage.getItem("pendingBooking")
+          })
       });
-      window.location.href = `/register?returnUrl=/booking-summary?${queryParams.toString()}`;
-    } else {
-      window.location.href = returnUrl ? `/register?returnUrl=${returnUrl}` : "/register";
-    }
+
+      sessionStorage.removeItem('prefilledEmail');
+      sessionStorage.removeItem('oauthState');
+      sessionStorage.removeItem('fromProvider');
+
+      window.location.href = `/register?${queryParams.toString()}`;
   };
 
   const handleOtpChange = (index, value) => {

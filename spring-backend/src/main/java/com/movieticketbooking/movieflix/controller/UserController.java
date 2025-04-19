@@ -186,22 +186,26 @@ public class UserController {
             return;
         }
 
-        String email = oauth2User.getAttribute("email");
-        String googleId = oauth2User.getAttribute("sub");
+        String email = oauth2User != null ? oauth2User.getAttribute("email") : null;
+        String googleId = oauth2User != null ? oauth2User.getAttribute("sub") : null;
 
         if (email == null || googleId == null) {
             response.sendRedirect("http://localhost:3000/login?error=invalid_google_response");
             return;
         }
 
+
         Optional<User> optionalUser = userService.findByEmail(email);
         if (optionalUser.isEmpty()) {
-            // Encode email for URL safety
             String encodedEmail = URLEncoder.encode(email, "UTF-8");
-            // Redirect with clear message and option to register
+            String encodedState = state != null ? URLEncoder.encode(state, "UTF-8") : "";
+
             response.sendRedirect(
-                    "http://localhost:3000/login?error=no_account&message=Account+not+found.+Please+register.&email=" +
-                            encodedEmail + "&from=google"
+                    "http://localhost:3000/login?error=no_account" +
+                            "&message=Account+not+found.+Please+register." +
+                            "&email=" + encodedEmail +
+                            "&from=google" +
+                            "&state=" + encodedState
             );
             return;
         }
