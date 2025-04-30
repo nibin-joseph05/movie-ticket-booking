@@ -224,19 +224,25 @@ export default function AccountPage() {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
               <div className="flex flex-col items-center">
-                {userData.photoPath && !imageError ? (
+                {userData.photoPath ? (
                   <img
                     src={`http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
                     alt="Profile"
                     className="w-32 h-32 rounded-full object-cover border-4 border-red-500/50 shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
-                    onError={() => setImageError(true)}
+                    onError={(e) => {
+                      setImageError(true);
+                      e.target.src = '/fallback.jpg';
+                    }}
                     onClick={() => setShowEnlargedPhoto(true)}
                   />
                 ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-red-600 to-pink-600 text-white flex items-center justify-center text-5xl font-bold shadow-lg">
-                    {userData.firstName?.charAt(0)}{userData.lastName?.charAt(0)}
-                  </div>
+                  <img
+                    src="/fallback.jpg"
+                    alt="Fallback Profile"
+                    className="w-32 h-32 rounded-full object-cover border-4 border-red-500/50 shadow-lg"
+                  />
                 )}
               </div>
 

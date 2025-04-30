@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -240,10 +241,15 @@ public class UserController {
     }
 
     @GetMapping("/photo")
-    public ResponseEntity<Resource> getUserPhoto(@RequestParam String path) throws IOException {
+    public ResponseEntity<Resource> getUserPhoto(@RequestParam String path) {
         try {
+            if (path == null || path.trim().isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
             Path filePath = Paths.get(path);
-            if (!Files.exists(filePath)) {
+
+            if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
                 return ResponseEntity.notFound().build();
             }
 
@@ -251,11 +257,13 @@ public class UserController {
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
                     .body(resource);
+        } catch (InvalidPathException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
+            System.err.println("Error loading photo: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
 
     @GetMapping("/details")
     public ResponseEntity<?> getUserDetails(HttpSession session) {
@@ -264,7 +272,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not logged in"));
         }
 
-        // Get fresh data from DB
         Optional<User> dbUser = userService.findByEmail(user.getEmail());
         if (dbUser.isEmpty()) {
             session.invalidate();
@@ -274,14 +281,14 @@ public class UserController {
         User currentUser = dbUser.get();
         return ResponseEntity.ok(Map.of(
                 "id", currentUser.getUserId(),
-                "firstName", currentUser.getFirstName(),
-                "lastName", currentUser.getLastName(),
-                "email", currentUser.getEmail(),
-                "phoneNumber", currentUser.getPhoneNumber(),
-                "photoPath", currentUser.getUserPhotoPath()
+                "firstName", currentUser.getFirstName() != null ? currentUser.getFirstName() : "",
+                "lastName", currentUser.getLastName() != null ? currentUser.getLastName() : "",
+                "email", currentUser.getEmail() != null ? currentUser.getEmail() : "",
+                "phoneNumber", currentUser.getPhoneNumber() != null ? currentUser.getPhoneNumber() : "",
+                "photoPath", currentUser.getUserPhotoPath() != null ? currentUser.getUserPhotoPath() : ""
         ));
     }
-
+    
     @PutMapping(value = "/update", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<?> updateUser(
             @RequestParam(value = "firstName", required = false) String firstName,
