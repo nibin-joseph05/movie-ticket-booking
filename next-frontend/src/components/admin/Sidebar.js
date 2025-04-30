@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { FiHome, FiPlusCircle, FiUsers } from "react-icons/fi";
+import { FiHome, FiPlusCircle, FiUsers, FiDollarSign } from "react-icons/fi";
 
 export default function Sidebar() {
   const router = useRouter();
@@ -38,6 +38,16 @@ export default function Sidebar() {
           <FiPlusCircle size={20} />
           Booking Details
         </button>
+
+
+        <button
+          onClick={() => router.push("/profit-admin")}
+          className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg bg-gray-800 hover:bg-green-600 transition-transform transform hover:scale-105"
+        >
+          <FiDollarSign size={20} />
+          Admin Profit
+        </button>
+
       </nav>
     </aside>
   );

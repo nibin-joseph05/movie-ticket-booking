@@ -1,5 +1,6 @@
 package com.movieticketbooking.movieflix.repository;
 
+import com.movieticketbooking.movieflix.dto.MonthlyProfit;
 import com.movieticketbooking.movieflix.models.Booking;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -7,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +42,26 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "LEFT JOIN FETCH fo.foodItem " +
             "WHERE b.bookingReference = :reference")
     Optional<Booking> findWithFoodOrders(@Param("reference") String reference);
+
+
+    @Query("SELECT COALESCE(SUM(s.price), 0) FROM Booking b JOIN b.seats s " +
+            "WHERE b.bookingTime BETWEEN :start AND :end")
+    Double sumTicketSalesByDateRange(@Param("start") LocalDateTime start,
+                                     @Param("end") LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(fo.quantity * fo.priceAtOrder), 0) FROM Booking b JOIN b.foodOrders fo " +
+            "WHERE b.bookingTime BETWEEN :start AND :end")
+    Double sumFoodSalesByDateRange(@Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end);
+
+    @Query("SELECT NEW com.movieticketbooking.movieflix.dto.MonthlyProfit(" +
+            "TO_CHAR(b.bookingTime, 'YYYY-MM'), " +
+            "COALESCE(SUM(s.price), 0.0), " +  // Ensure numeric default
+            "COALESCE(SUM(fo.quantity * fo.priceAtOrder), 0.0)) " +  // Ensure numeric default
+            "FROM Booking b " +
+            "LEFT JOIN b.seats s " +
+            "LEFT JOIN b.foodOrders fo " +
+            "GROUP BY TO_CHAR(b.bookingTime, 'YYYY-MM') " +
+            "ORDER BY TO_CHAR(b.bookingTime, 'YYYY-MM') DESC")
+    List<MonthlyProfit> getMonthlyProfitTrend();
 }

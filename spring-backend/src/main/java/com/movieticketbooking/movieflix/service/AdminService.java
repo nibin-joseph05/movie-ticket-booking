@@ -2,6 +2,8 @@ package com.movieticketbooking.movieflix.service;
 
 import com.movieticketbooking.movieflix.dto.BookingDetailsDTO;
 import com.movieticketbooking.movieflix.dto.BookingListDTO;
+import com.movieticketbooking.movieflix.dto.MonthlyProfit;
+import com.movieticketbooking.movieflix.dto.ProfitSummary;
 import com.movieticketbooking.movieflix.models.Admin;
 import com.movieticketbooking.movieflix.models.Booking;
 import com.movieticketbooking.movieflix.models.User;
@@ -15,6 +17,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,6 +89,20 @@ public class AdminService {
         });
         return booking.map(BookingDetailsDTO::fromEntity);
     }
+
+    public ProfitSummary getProfitSummary(LocalDateTime start, LocalDateTime end) {
+        Double ticketSales = bookingRepository.sumTicketSalesByDateRange(start, end);
+        Double foodSales = bookingRepository.sumFoodSalesByDateRange(start, end);
+        List<MonthlyProfit> trend = bookingRepository.getMonthlyProfitTrend();
+
+        return new ProfitSummary(
+                ticketSales != null ? ticketSales : 0.0,
+                foodSales != null ? foodSales : 0.0,
+                (ticketSales != null ? ticketSales : 0.0) + (foodSales != null ? foodSales : 0.0),
+                trend
+        );
+    }
+
 
 
 }
