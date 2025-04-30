@@ -29,25 +29,31 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendEmail(String to, String subject, String otp) {
+    public void sendEmail(String to, String subject, String otp, String purpose) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-            // Replace the 'cid:logoImage' with the direct Imgur link
+            String actionDescription = "";
+            if ("PHONE_UPDATE".equals(purpose)) {
+                actionDescription = "phone number change";
+            } else {
+                actionDescription = "login";
+            }
+
             String emailContent = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>"
                     + "<div style='text-align: center;'>"
                     + "<img src='https://imgur.com/MXX25b3.png' style='max-width: 150px; margin-bottom: 20px;'/>"
                     + "</div>"
-                    + "<h2 style='color: #333; text-align: center;'>Your OTP Code</h2>"
+                    + "<h2 style='color: #333; text-align: center;'>Your Verification Code</h2>"
                     + "<p style='font-size: 16px; color: #555;'>Hello,</p>"
-                    + "<p style='font-size: 16px; color: #555;'>Your OTP for login is:</p>"
+                    + "<p style='font-size: 16px; color: #555;'>Your verification code for " + actionDescription + " is:</p>"
                     + "<div style='font-size: 22px; font-weight: bold; text-align: center; padding: 10px; background: #f8f8f8; border-radius: 5px; width: fit-content; margin: auto;'>"
                     + otp + "</div>"
-                    + "<p style='font-size: 14px; color: #777;'>This OTP is valid for 5 minutes. Do not share it with anyone.</p>"
-                    + "<p style='font-size: 14px; color: #777;'>If you did not request this OTP, please ignore this email.</p>"
+                    + "<p style='font-size: 14px; color: #777;'>This code is valid for 5 minutes. Do not share it with anyone.</p>"
+                    + "<p style='font-size: 14px; color: #777;'>If you did not request this change, please contact support immediately.</p>"
                     + "<hr style='border: none; border-top: 1px solid #ddd;'>"
-                    + "<p style='font-size: 12px; color: #888; text-align: center;'>MovieFlix | Secure Login System</p>"
+                    + "<p style='font-size: 12px; color: #888; text-align: center;'>MovieFlix | Account Security</p>"
                     + "</div>";
 
             helper.setFrom(new InternetAddress(emailUsername, "MovieFlix Support"));

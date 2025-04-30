@@ -110,7 +110,7 @@ public class UserController {
                     if (!userService.getPasswordEncoder().matches(password, user.getPassword())) {
                         return ResponseEntity.badRequest().body(Map.of("error", "Invalid Password"));
                     }
-                    userService.generateAndSendOtp(email);
+                    userService.generateAndSendOtp(email, "LOGIN");
                     return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
                 })
                 .orElse(ResponseEntity.badRequest().body(Map.of("error", "Email not registered")));
@@ -402,7 +402,7 @@ public class UserController {
         }
 
         try {
-            userService.generateAndSendOtp(user.getEmail());
+            userService.generateAndSendOtp(user.getEmail(), "PHONE_UPDATE");
             return ResponseEntity.ok(Map.of("message", "Verification code sent to your email"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to send verification code"));

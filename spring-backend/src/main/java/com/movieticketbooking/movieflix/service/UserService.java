@@ -39,13 +39,19 @@ public class UserService {
         return userRepository.findByPhoneNumber(phoneNumber);
     }
 
-    public void generateAndSendOtp(String email) {
+    public void generateAndSendOtp(String email, String purpose) {
         String otp = String.format("%06d", new Random().nextInt(999999));
         otpStorage.put(email, otp);
 
-        System.out.println("Generated OTP for " + email + " is: " + otp);
+        String subject = "";
+        if ("PHONE_UPDATE".equals(purpose)) {
+            subject = "Phone Number Change Verification Code";
+        } else {
+            subject = "Your Login OTP Code";
+        }
 
-        emailService.sendEmail(email, "Your OTP Code", "Your OTP for login is: " + otp);
+        emailService.sendEmail(email, subject, otp, purpose);
+        System.out.println("Generated OTP for " + email + " is: " + otp);
     }
 
     public boolean verifyOtp(String email, String otp) {
