@@ -1,12 +1,14 @@
 package com.movieticketbooking.movieflix.controller;
 
 import com.movieticketbooking.movieflix.models.Admin;
+import com.movieticketbooking.movieflix.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import com.movieticketbooking.movieflix.service.AdminService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,4 +42,26 @@ public class AdminController {
             return ResponseEntity.status(401).body("Invalid email or password");
         }
     }
+
+    // AdminController.java
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "0") int offset
+    ) {
+        try {
+            List<User> users = adminService.getFilteredUsers(search, limit, offset);
+            long totalUsers = adminService.countFilteredUsers(search);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("users", users);
+            response.put("total", totalUsers);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error fetching users"));
+        }
+    }
+
+
 }
