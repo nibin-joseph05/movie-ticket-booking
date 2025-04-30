@@ -394,6 +394,7 @@ public class UserController {
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
+
     @PostMapping("/send-verification")
     public ResponseEntity<?> sendVerificationCode(HttpSession session) {
         User user = (User) session.getAttribute("user");

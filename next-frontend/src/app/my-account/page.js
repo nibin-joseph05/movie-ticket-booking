@@ -25,8 +25,7 @@ export default function AccountPage() {
   });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verificationSent, setVerificationSent] = useState(false);
+
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -76,29 +75,11 @@ export default function AccountPage() {
     setPasswordForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const sendVerificationCode = async () => {
-    try {
-      await axios.post('http://localhost:8080/user/send-verification', {}, {
-        withCredentials: true
-      });
-      setVerificationSent(true);
-      setPasswordSuccess('Verification code sent to your email');
-      setPasswordError('');
-    } catch (err) {
-      console.error('Error sending verification code:', err);
-      setPasswordError(err.response?.data?.error || 'Failed to send verification code. Please try again.');
-    }
-  };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPasswordError('');
     setPasswordSuccess('');
-
-    if (!verificationSent) {
-      setPasswordError('Please verify your identity first');
-      return;
-    }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setPasswordError('New passwords do not match');
@@ -106,24 +87,26 @@ export default function AccountPage() {
     }
 
     try {
-      const response = await axios.post('http://localhost:8080/user/change-password', {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword,
-        verificationCode
-      }, { withCredentials: true });
+      const response = await axios.post(
+        'http://localhost:8080/user/change-password',
+        {
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        },
+        { withCredentials: true }
+      );
 
-      setPasswordSuccess(response.data.message || 'Password changed successfully');
+      setPasswordSuccess('Password changed successfully');
+      // Reset form fields
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
-      setVerificationCode('');
-      setVerificationSent(false);
-      setShowPasswordForm(false);
+      // Close password form after success
+      setTimeout(() => setShowPasswordForm(false), 3000);
     } catch (err) {
-      console.error('Error changing password:', err);
-      setPasswordError(err.response?.data?.error || 'Failed to change password. Please try again.');
+      setPasswordError(err.response?.data?.error || 'Failed to change password');
     }
   };
 
@@ -308,104 +291,65 @@ export default function AccountPage() {
                 </div>
               )}
 
-
-            {passwordSuccess && (
-              <div className="bg-green-900/50 border-l-4 border-green-500 text-green-300 p-4 mb-6 rounded-lg mx-auto max-w-4xl">
-                {passwordSuccess}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={passwordForm.currentPassword}
+                  onChange={handlePasswordChange}
+                  required
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 text-white"
+                />
               </div>
-            )}
 
-            {error && (
-              <div className="bg-red-900/50 border-l-4 border-red-500 text-red-300 p-4 mb-6 rounded-lg mx-auto max-w-4xl">
-                {error}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordChange}
+                  required
+                  minLength="8"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 text-white"
+                />
               </div>
-            )}
 
-              {!verificationSent ? (
-                <div className="space-y-4">
-                  <p className="text-gray-300">For security reasons, we need to verify your identity before changing your password.</p>
-                  <button
-                    type="button"
-                    onClick={sendVerificationCode}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
-                  >
-                    Send Verification Code
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Verification Code</label>
-                    <input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                      placeholder="Enter the code sent to your email"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange}
+                  required
+                  minLength="8"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 text-white"
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
-                    <input
-                      type="password"
-                      name="currentPassword"
-                      value={passwordForm.currentPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      value={passwordForm.newPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      minLength="6"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={passwordForm.confirmPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      minLength="6"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-white"
-                    />
-                  </div>
-
-                  <div className="flex space-x-4">
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
-                    >
-                      Update Password
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPasswordForm(false);
-                        setVerificationSent(false);
-                        setPasswordError('');
-                        setPasswordSuccess('');
-                      }}
-                      className="px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-all shadow"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              )}
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md"
+                >
+                  Change Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordForm(false)}
+                  className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg shadow"
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           )}
         </div>
