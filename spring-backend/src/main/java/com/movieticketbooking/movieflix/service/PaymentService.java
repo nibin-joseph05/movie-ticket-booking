@@ -7,6 +7,8 @@ import com.razorpay.RazorpayException;
 import com.razorpay.Order;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import org.json.JSONException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -70,18 +72,29 @@ public class PaymentService {
 
     public ResponseEntity<?> createPaymentOrder(OrderRequest orderRequest, String userEmail) {
         try {
+            System.out.println("===== STARTING RAZORPAY ORDER CREATION =====");
+            System.out.println("[DEBUG] Using Razorpay Key ID: " + razorpayKeyId.substring(0, 4) + "***"); // Mask partial key
+            System.out.println("[DEBUG] User Email: " + userEmail);
+            System.out.println("[DEBUG] Received Order Request: " + new JSONObject(orderRequest).toString());
+
+            // Initialize Razorpay client
+            System.out.println("[DEBUG] Initializing Razorpay client...");
             RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
+            System.out.println("[DEBUG] Razorpay client initialized successfully");
 
-            // Convert amount to paise (Indian currency subunits)
+            // Amount conversion debug
+            System.out.println("[DEBUG] Original Amount: " + orderRequest.getAmount());
             int amountInPaise = (int) Math.round(orderRequest.getAmount() * 100);
+            System.out.println("[DEBUG] Converted Amount (paise): " + amountInPaise);
 
+            // Build order request
             JSONObject orderRequestJson = new JSONObject();
             orderRequestJson.put("amount", amountInPaise);
             orderRequestJson.put("currency", "INR");
             orderRequestJson.put("receipt", "order_"+System.currentTimeMillis());
             orderRequestJson.put("payment_capture", true);
 
-            // Build notes with all booking details
+            // Build notes
             JSONObject notesJson = new JSONObject();
             notesJson.put("userId", userEmail);
             notesJson.put("movieId", orderRequest.getMovieId());
@@ -89,52 +102,99 @@ public class PaymentService {
             notesJson.put("showtime", orderRequest.getShowtime());
             notesJson.put("category", orderRequest.getCategory());
 
+            // Seats handling
             if (orderRequest.getSeats() != null && !orderRequest.getSeats().isEmpty()) {
-                notesJson.put("seats", String.join(",", orderRequest.getSeats()));
+                String seats = String.join(",", orderRequest.getSeats());
+                notesJson.put("seats", seats);
+                System.out.println("[DEBUG] Processing " + orderRequest.getSeats().size() + " seats");
             } else {
                 notesJson.put("seats", "");
+                System.out.println("[DEBUG] No seats in request");
             }
 
             notesJson.put("date", orderRequest.getDate());
 
-            // Add food items if present
+            // Food items debug
             if (orderRequest.getFoodItems() != null && !orderRequest.getFoodItems().isEmpty()) {
+                System.out.println("[DEBUG] Processing " + orderRequest.getFoodItems().size() + " food items");
                 JSONArray foodItemsArray = new JSONArray();
                 for (FoodItemDTO item : orderRequest.getFoodItems()) {
                     JSONObject foodItemJson = new JSONObject();
                     foodItemJson.put("id", item.getId());
                     foodItemJson.put("name", item.getName());
-                    foodItemJson.put("description", item.getDescription());
-                    foodItemJson.put("category", item.getCategory());
-                    foodItemJson.put("image", item.getImage());
-                    foodItemJson.put("allergens", item.getAllergens());
                     foodItemJson.put("price", item.getPrice());
-                    foodItemJson.put("calories", item.getCalories());
                     foodItemJson.put("quantity", item.getQuantity());
                     foodItemsArray.put(foodItemJson);
                 }
                 notesJson.put("foodItems", foodItemsArray);
+            } else {
+                System.out.println("[DEBUG] No food items in request");
+            }
+
+            // Validate notes size
+            System.out.println("[DEBUG] Notes JSON size: " + notesJson.toString().length() + " characters");
+            if (notesJson.toString().length() > 1500) {
+                System.err.println("[ERROR] Notes payload exceeds 1500 character limit!");
             }
 
             orderRequestJson.put("notes", notesJson);
+            System.out.println("[DEBUG] Final Order Request JSON: " + orderRequestJson.toString(4));
 
-            // Create Razorpay order
+            // Create order
+            System.out.println("[DEBUG] Creating Razorpay order...");
             Order order = razorpay.orders.create(orderRequestJson);
+            System.out.println("[DEBUG] Razorpay Order Response: " + order.toString());
 
-            // Prepare response for frontend
+            // Prepare response
             JSONObject response = new JSONObject();
             response.put("id", order.get("id").toString());
             response.put("amount", order.get("amount").toString());
             response.put("currency", order.get("currency").toString());
             response.put("key", razorpayKeyId);
 
+            System.out.println("===== ORDER CREATION SUCCESSFUL =====");
             return ResponseEntity.ok(response.toString());
 
         } catch (RazorpayException e) {
+            String razorpayMessage = e.getMessage();
+            String errorCode = "unknown";
+            int statusCode = 500; // Default to internal server error
+            String errorDesc = razorpayMessage;
+
+            try {
+                // Attempt to parse the error message as JSON
+                JSONObject errorResponse = new JSONObject(razorpayMessage);
+                JSONObject errorDetails = errorResponse.getJSONObject("error");
+                errorCode = errorDetails.optString("code", "unknown");
+                statusCode = errorDetails.optInt("http_status_code", 500);
+                errorDesc = errorDetails.optString("description", razorpayMessage);
+            } catch (JSONException jsonEx) {
+                System.err.println("[ERROR] Failed to parse Razorpay error message: " + jsonEx.getMessage());
+            }
+
+            System.err.println("[RAZORPAY ERROR] Error Code: " + errorCode);
+            System.err.println("[RAZORPAY ERROR] Status Code: " + statusCode);
+            System.err.println("[RAZORPAY ERROR] Description: " + errorDesc);
+
+            // Build error response
             JSONObject errorResponse = new JSONObject();
             errorResponse.put("status", "error");
-            errorResponse.put("message", "Failed to create payment order: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse.toString());
+            errorResponse.put("message", "Failed to create payment order: " + errorDesc);
+            errorResponse.put("razorpay_code", errorCode);
+            errorResponse.put("http_status", statusCode);
+
+            // Use the parsed status code, default to 500 if invalid
+            HttpStatus httpStatus = HttpStatus.resolve(statusCode);
+            if (httpStatus == null) {
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            }
+
+            return ResponseEntity.status(httpStatus).body(errorResponse.toString());
+        } catch (Exception e) {
+            System.err.println("[UNEXPECTED ERROR] " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"status\":\"error\",\"message\":\"Unexpected error occurred\"}");
         }
     }
 
