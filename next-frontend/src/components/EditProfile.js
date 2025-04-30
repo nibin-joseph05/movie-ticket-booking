@@ -91,45 +91,44 @@ const EditProfile = ({ userData, onSave, onCancel }) => {
       return;
     }
 
-    if (!window.confirm('Are you sure you want to update your profile? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('firstName', formData.firstName);
       formDataToSend.append('lastName', formData.lastName);
-      formDataToSend.append('phoneNumber', formData.phoneNumber);
-      if (formData.photo) formDataToSend.append('userPhotoPath', formData.photo);
 
       if (formData.phoneNumber !== userData.phoneNumber) {
+        formDataToSend.append('phoneNumber', formData.phoneNumber);
         if (!verificationSent) {
           await axios.post('http://localhost:8080/user/send-verification', {}, { withCredentials: true });
           setVerificationSent(true);
-          setSuccess('Verification code sent to your phone');
-          return;
-        }
-
-        if (!verificationCode) {
-          setError('Verification code is required');
+          setSuccess('Verification code sent to your email');
           return;
         }
         formDataToSend.append('verificationCode', verificationCode);
       }
 
-      const response = await axios.put('http://localhost:8080/user/update', formDataToSend, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true
-      });
+      if (formData.photo) {
+        formDataToSend.append('userPhotoPath', formData.photo);
+      }
 
-      setSuccess(response.data.message || 'Profile updated successfully');
-      setIsDirty(false);
-      onSave();
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err.response?.data?.error || 'Failed to update profile. Please try again.');
-    }
+      const response = await axios.put('http://localhost:8080/user/update', formDataToSend, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            withCredentials: true
+          });
+
+      setSuccess('Profile updated successfully');
+          onSave();
+        } catch (err) {
+          const errorMessage = err.response?.data?.error || 'Update failed';
+          setError(errorMessage);
+
+          // Handle specific error cases
+          if (errorMessage.includes('Phone number already in use')) {
+            setError('This phone number is already registered. Please use a different number.');
+          }
+        }
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

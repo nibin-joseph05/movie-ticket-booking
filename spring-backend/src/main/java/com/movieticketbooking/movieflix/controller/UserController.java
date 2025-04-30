@@ -282,6 +282,7 @@ public class UserController {
             @RequestParam(value = "firstName", required = false) String firstName,
             @RequestParam(value = "lastName", required = false) String lastName,
             @RequestParam(value = "phoneNumber", required = false) String phoneNumber,
+            @RequestParam(value = "verificationCode", required = false) String verificationCode,
             @RequestParam(value = "userPhotoPath", required = false) MultipartFile file,
             HttpSession session) {
 
@@ -297,17 +298,36 @@ public class UserController {
         }
 
         User user = optionalUser.get();
+        boolean isPhoneNumberChanged = false;
 
-        if (firstName != null) user.setFirstName(firstName);
-        if (lastName != null) user.setLastName(lastName);
         if (phoneNumber != null) {
             // Check if phone number is already taken by another user
-            Optional<User> phoneUser = userService.findByPhoneNumber(phoneNumber);
-            if (phoneUser.isPresent() && phoneUser.get().getUserId() != user.getUserId()) {
+            Optional<User> existingUser = userService.findByPhoneNumber(phoneNumber);
+            if (existingUser.isPresent() && existingUser.get().getUserId() != user.getUserId()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Phone number already in use"));
             }
-            user.setPhoneNumber(phoneNumber);
+
+            if (phoneNumber.length() != 10 || !phoneNumber.matches("\\d+")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phone number must be 10 digits"));
+            }
+            isPhoneNumberChanged = !phoneNumber.equals(user.getPhoneNumber());
         }
+
+
+        // Handle phone number change verification
+        if (isPhoneNumberChanged) {
+            if (verificationCode == null || verificationCode.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Verification code required for phone number change"));
+            }
+            if (!userService.verifyOtp(user.getEmail(), verificationCode)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired verification code"));
+            }
+        }
+
+        // Update user details
+        if (firstName != null) user.setFirstName(firstName);
+        if (lastName != null) user.setLastName(lastName);
+        if (phoneNumber != null) user.setPhoneNumber(phoneNumber);
 
         if (file != null && !file.isEmpty()) {
             try {
@@ -374,6 +394,21 @@ public class UserController {
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
+    @PostMapping("/send-verification")
+    public ResponseEntity<?> sendVerificationCode(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Not logged in"));
+        }
+
+        try {
+            userService.generateAndSendOtp(user.getEmail());
+            return ResponseEntity.ok(Map.of("message", "Verification code sent to your email"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to send verification code"));
+        }
+    }
+
 
 
 }
