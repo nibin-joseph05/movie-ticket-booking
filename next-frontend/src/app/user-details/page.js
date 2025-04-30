@@ -79,35 +79,48 @@ export default function UserDetails() {
                 darkMode ? "border-gray-700" : "border-gray-200"
               }`}>
                 <tr>
+                  <th className="px-6 py-4 text-left">Photo</th>
                   <th className="px-6 py-4 text-left">Name</th>
                   <th className="px-6 py-4 text-left">Email</th>
                   <th className="px-6 py-4 text-left">Phone</th>
-                  <th className="px-6 py-4 text-left">Registered</th>
+
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.userId} className={`hover:${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                  <tr
+                    key={user.userId}
+                    className={`hover:${darkMode ? "bg-gray-700" : "bg-gray-50"}`}
+                  >
+                    {/* Photo column */}
                     <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        {user.userPhotoPath && (
-                          <img
-                            src={`http://localhost:8080/user/photo?path=${encodeURIComponent(user.userPhotoPath)}`}
-                            alt="User"
-                            className="w-10 h-10 rounded-full mr-3"
-                          />
-                        )}
-                        {user.firstName} {user.lastName}
-                      </div>
+                      {user.userPhotoPath ? (
+                        <img
+                          src={`http://localhost:8080/user/photo?path=${encodeURIComponent(
+                            user.userPhotoPath
+                          )}`}
+                          alt="User"
+                          className="w-14 h-14 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center text-sm text-gray-600">
+                          N/A
+                        </div>
+                      )}
                     </td>
+
+                    {/* Name column */}
+                    <td className="px-6 py-4">{user.firstName} {user.lastName}</td>
+
+                    {/* Email column */}
                     <td className="px-6 py-4">{user.email}</td>
+
+                    {/* Phone column */}
                     <td className="px-6 py-4">{user.phoneNumber}</td>
-                    <td className="px-6 py-4">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
 
