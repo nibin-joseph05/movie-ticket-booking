@@ -26,7 +26,7 @@ export default function AdminDashboard() {
       <aside className="w-64 bg-[#1e1e2e] p-6 flex flex-col shadow-lg">
         {/* Logo */}
         <div className="flex items-center justify-center mb-8">
-          <Image src="/logo.jpg" alt="Logo" width={120} height={80} className="rounded-lg shadow-md" />
+          <img src="/logo.webp" alt="Logo" width={120} height={80} className="rounded-lg shadow-md" />
         </div>
 
         {/* Navigation */}
@@ -79,11 +79,6 @@ export default function AdminDashboard() {
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-red-500">Admin Dashboard</h1>
         </div>
-
-        {/* Admin Info */}
-        <p className={`text-lg mb-6 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>
-          Logged in as: <span className="text-yellow-500">Admin@gmail.com</span>
-        </p>
 
         {/* Project Overview Section */}
         <div

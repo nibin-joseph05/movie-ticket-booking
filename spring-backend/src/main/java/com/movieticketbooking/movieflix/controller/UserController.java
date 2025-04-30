@@ -288,7 +288,7 @@ public class UserController {
                 "photoPath", currentUser.getUserPhotoPath() != null ? currentUser.getUserPhotoPath() : ""
         ));
     }
-    
+
     @PutMapping(value = "/update", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<?> updateUser(
             @RequestParam(value = "firstName", required = false) String firstName,
