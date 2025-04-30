@@ -39,30 +39,44 @@ public class UserService {
         return userRepository.findByPhoneNumber(phoneNumber);
     }
 
-    public void generateAndSendOtp(String email, String purpose) {
-        String otp = String.format("%06d", new Random().nextInt(999999));
-        otpStorage.put(email, otp);
 
-        String subject = "";
-        if ("PHONE_UPDATE".equals(purpose)) {
-            subject = "Phone Number Change Verification Code";
-        } else {
-            subject = "Your Login OTP Code";
-        }
-
-        emailService.sendEmail(email, subject, otp, purpose);
-        System.out.println("Generated OTP for " + email + " is: " + otp);
-    }
 
     public boolean verifyOtp(String email, String otp) {
-        System.out.println("Stored OTPs: " + otpStorage);
-        System.out.println("Verifying OTP for email: " + email + " with OTP: " + otp);
+        return verifyOtp(email, otp, "LOGIN"); // Default to LOGIN purpose
+    }
 
-        if (otpStorage.containsKey(email) && otpStorage.get(email).equals(otp)) {
-            otpStorage.remove(email);
+    // Modified method with purpose parameter
+    public boolean verifyOtp(String email, String otp, String purpose) {
+        String key = email + ":" + purpose;
+        System.out.println("Verifying OTP for key: " + key);
+
+        if (otpStorage.containsKey(key) && otpStorage.get(key).equals(otp)) {
+            otpStorage.remove(key);
             return true;
         }
         return false;
+    }
+
+    // Update existing generateAndSendOtp method
+    public void generateAndSendOtp(String email, String purpose) {
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        String storageKey = email + ":" + purpose;
+        otpStorage.put(storageKey, otp);
+
+        String subject;
+        switch (purpose) {
+            case "PHONE_UPDATE":
+                subject = "Phone Number Change Verification Code";
+                break;
+            case "PASSWORD_RESET":
+                subject = "Password Reset Verification Code";
+                break;
+            default:
+                subject = "Your Login OTP Code";
+        }
+
+        emailService.sendEmail(email, subject, otp, purpose);
+        System.out.println("Generated OTP for " + email + " (" + purpose + "): " + otp);
     }
 
     public User saveUserWithoutEncodingPassword(User user) {

@@ -273,6 +273,11 @@ export default function AccountPage() {
                 Password Settings
               </span>
             </h2>
+            {passwordSuccess && (
+              <div className="bg-green-900/50 border-l-4 border-green-500 text-green-300 p-4 rounded-lg mb-4">
+                {passwordSuccess}
+              </div>
+            )}
             {!showPasswordForm && (
               <button
                 onClick={() => setShowPasswordForm(true)}

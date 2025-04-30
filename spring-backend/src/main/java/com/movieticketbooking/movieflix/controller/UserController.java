@@ -10,6 +10,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
@@ -40,6 +41,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     private static final String UPLOAD_DIR = System.getProperty("user.dir") + File.separator + "user_photos" + File.separator;
 
@@ -126,7 +130,7 @@ public class UserController {
         }
 
         Optional<User> optionalUser = userService.findByEmail(email);
-        if (optionalUser.isPresent() && userService.verifyOtp(email, otp)) {
+        if (optionalUser.isPresent() && userService.verifyOtp(email, otp, "LOGIN")) {
             User user = optionalUser.get();
             session.setAttribute("user", user);
 
@@ -147,22 +151,23 @@ public class UserController {
     public ResponseEntity<?> checkSession(HttpSession session) {
         User user = (User) session.getAttribute("user");
         if (user != null) {
-            // Verify session is still valid
             Optional<User> dbUser = userService.findByEmail(user.getEmail());
             if (dbUser.isPresent()) {
+                User currentUser = dbUser.get();
+
+                // Handle potential null values
                 return ResponseEntity.ok(Map.of(
                         "isLoggedIn", true,
                         "user", Map.of(
-                                "id", dbUser.get().getUserId(),
-                                "firstName", dbUser.get().getFirstName(),
-                                "lastName", dbUser.get().getLastName(),
-                                "email", dbUser.get().getEmail(),
-                                "phoneNumber", dbUser.get().getPhoneNumber(),
-                                "photoPath", dbUser.get().getUserPhotoPath()
+                                "id", currentUser.getUserId(),
+                                "firstName", currentUser.getFirstName() != null ? currentUser.getFirstName() : "",
+                                "lastName", currentUser.getLastName() != null ? currentUser.getLastName() : "",
+                                "email", currentUser.getEmail() != null ? currentUser.getEmail() : "",
+                                "phoneNumber", currentUser.getPhoneNumber() != null ? currentUser.getPhoneNumber() : "",
+                                "photoPath", currentUser.getUserPhotoPath() != null ? currentUser.getUserPhotoPath() : ""
                         )
                 ));
             }
-            // If user not found in DB, invalidate session
             session.invalidate();
         }
         return ResponseEntity.ok(Map.of("isLoggedIn", false));
@@ -319,7 +324,7 @@ public class UserController {
             if (verificationCode == null || verificationCode.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Verification code required for phone number change"));
             }
-            if (!userService.verifyOtp(user.getEmail(), verificationCode)) {
+            if (!userService.verifyOtp(user.getEmail(), verificationCode, "PHONE_UPDATE")) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired verification code"));
             }
         }
@@ -389,7 +394,7 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", "Current password is incorrect"));
         }
 
-        dbUser.setPassword(userService.getPasswordEncoder().encode(newPassword));
+        dbUser.setPassword(newPassword);
         userService.saveUser(dbUser);
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
@@ -408,6 +413,104 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to send verification code"));
         }
+    }
+
+    // Add resend OTP endpoint
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String purpose = request.get("purpose");
+
+        if (email == null || purpose == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and purpose are required"));
+        }
+
+        if (!userService.findByEmail(email).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email not registered"));
+        }
+
+        try {
+            userService.generateAndSendOtp(email, purpose);
+            return ResponseEntity.ok(Map.of("message", "New OTP sent successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to resend OTP"));
+        }
+    }
+
+    // Updated reset password endpoint with validation
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String newPassword = request.get("newPassword");
+        String confirmPassword = request.get("confirmPassword");
+
+        // Validation
+        if (email == null || newPassword == null || confirmPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "All fields are required"));
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Passwords do not match"));
+        }
+
+        if (newPassword.length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Password must be at least 8 characters"));
+        }
+
+        Optional<User> userOptional = userService.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+        }
+
+        User user = userOptional.get();
+        user.setPassword(newPassword);
+        userService.saveUser(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
+    // Updated forgot password endpoint with email validation
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> initiatePasswordReset(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+        }
+
+        // Email format validation
+        if (!email.matches("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid email format"));
+        }
+
+        Optional<User> userOptional = userService.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email not registered"));
+        }
+
+        userService.generateAndSendOtp(email, "PASSWORD_RESET");
+        return ResponseEntity.ok(Map.of("message", "OTP sent to registered email"));
+    }
+
+    // Updated OTP verification with validation
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<?> verifyResetOtp(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String otp = request.get("otp");
+
+        if (email == null || otp == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and OTP are required"));
+        }
+
+        // OTP validation
+        if (!otp.matches("\\d{6}")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "OTP must be 6 digits"));
+        }
+
+        if (userService.verifyOtp(email, otp, "PASSWORD_RESET")) {
+            return ResponseEntity.ok(Map.of("message", "OTP verified successfully"));
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
     }
 
 
