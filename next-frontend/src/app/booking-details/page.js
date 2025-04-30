@@ -111,10 +111,14 @@ export default function BookingList() {
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex items-center">
-                      <FiDollarSign className="mr-1" size={16} />
-                      {b.totalAmount.toFixed(2)}
+                      {b.totalAmount.toLocaleString('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        minimumFractionDigits: 2,
+                      })}
                     </div>
                   </td>
+
                   <td className="px-6 py-3">
                     <span className={`px-2 py-1 rounded-full text-sm ${
                       b.paymentStatus === "SUCCESSFUL" ? "bg-green-500" : "bg-red-500"
