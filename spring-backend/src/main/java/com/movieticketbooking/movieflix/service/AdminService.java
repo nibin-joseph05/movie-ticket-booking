@@ -1,10 +1,17 @@
 package com.movieticketbooking.movieflix.service;
 
+import com.movieticketbooking.movieflix.dto.BookingDetailsDTO;
+import com.movieticketbooking.movieflix.dto.BookingListDTO;
 import com.movieticketbooking.movieflix.models.Admin;
+import com.movieticketbooking.movieflix.models.Booking;
 import com.movieticketbooking.movieflix.models.User;
 import com.movieticketbooking.movieflix.repository.AdminRepository;
+import com.movieticketbooking.movieflix.repository.BookingRepository;
 import com.movieticketbooking.movieflix.repository.UserRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class AdminService {
 
     @Autowired
@@ -19,6 +27,9 @@ public class AdminService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
@@ -54,6 +65,25 @@ public class AdminService {
             return userRepository.countFilteredUsers(searchTerm);
         }
         return userRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookingListDTO> getBookingList(String search, int page, int size) {
+        Page<Booking> bookings = bookingRepository.findBasicBookings(
+                "%" + search.toLowerCase() + "%",
+                PageRequest.of(page, size)
+        );
+        return bookings.map(BookingListDTO::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BookingDetailsDTO> getBookingDetails(String reference) {
+        Optional<Booking> booking = bookingRepository.findDetailedBooking(reference);
+        booking.ifPresent(b -> {
+            bookingRepository.findWithFoodOrders(reference)
+                    .ifPresent(fb -> b.setFoodOrders(fb.getFoodOrders()));
+        });
+        return booking.map(BookingDetailsDTO::fromEntity);
     }
 
 

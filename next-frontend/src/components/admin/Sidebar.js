@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { FiHome, FiPlusCircle, FiUsers  } from "react-icons/fi";
+import { FiHome, FiPlusCircle, FiUsers } from "react-icons/fi";
 
 export default function Sidebar() {
   const router = useRouter();
@@ -28,6 +28,15 @@ export default function Sidebar() {
         >
           <FiUsers size={20} />
           Users
+        </button>
+
+        {/* Booking Details Button */}
+        <button
+          onClick={() => router.push("/booking-details")}
+          className="flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg bg-gray-800 hover:bg-red-500 transition-transform transform hover:scale-105"
+        >
+          <FiPlusCircle size={20} />
+          Booking Details
         </button>
       </nav>
     </aside>

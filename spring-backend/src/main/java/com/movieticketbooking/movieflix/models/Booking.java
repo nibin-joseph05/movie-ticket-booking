@@ -149,6 +149,7 @@ public class Booking {
         return this.payment;
     }
 
+
     // Helper methods for bidirectional relationships
     public void addSeat(BookedSeat seat) {
         seats.add(seat);
