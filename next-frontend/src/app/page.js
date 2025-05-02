@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import HeroSection from "@/components/home/HeroSection";
 import axios from "axios";
 
 export default function Home() {
@@ -79,21 +80,7 @@ export default function Home() {
         </div>
       )}
 
-      <section className="relative w-full h-[60vh] flex items-center justify-center">
-        <img
-          src="hero-section.Webp"
-          alt="Movie Night"
-          className="absolute inset-0 w-full h-full object-cover brightness-100"
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 px-4 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white drop-shadow-lg">
-            Your <span className="text-red-500">Gateway</span> to the Silver Screen
-          </h1>
-          <p className="text-lg sm:text-xl mt-3 text-gray-300">
-            Discover & book your favorite movies seamlessly.
-          </p>
-        </div>
-      </section>
+      <HeroSection />
 
       <section className="max-w-[1200px] mx-auto px-4 sm:px-8 py-12">
         <h3 className="text-3xl font-bold mb-8 text-red-500 text-center border-b-4 border-red-600 pb-2">
