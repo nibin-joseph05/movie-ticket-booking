@@ -161,6 +161,9 @@ export default function Header({ onLogout }) {
           <Link href="/my-bookings" className="hover:text-red-500 transition-all duration-200">
             My Bookings
           </Link>
+          <Link href="/about-us" className="hover:text-red-500 transition-all duration-200">
+            About Us
+          </Link>
 
         </nav>
 
