@@ -172,7 +172,7 @@ export default function HeroSection() {
                 className="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-4 rounded-xl text-lg md:text-xl relative overflow-hidden group"
               >
                 <span className="relative z-10 flex items-center gap-2">
-                  Explore Collection
+                  Explore Movies
                   <motion.span
                     animate={{ x: [0, 4, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
