@@ -17,7 +17,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +42,6 @@ public class AdminService {
         admin.setPassword(encoder.encode(admin.getPassword()));
         return adminRepository.save(admin);
     }
-
 
     public boolean authenticateAdmin(String email, String rawPassword) {
         Optional<Admin> adminOptional = adminRepository.findByEmail(email);
@@ -102,7 +100,6 @@ public class AdminService {
                 trend
         );
     }
-
 
 
 }

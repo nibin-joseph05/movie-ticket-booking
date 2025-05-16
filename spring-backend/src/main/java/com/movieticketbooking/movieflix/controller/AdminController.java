@@ -31,13 +31,11 @@ public class AdminController {
     @Autowired
     private AdminService adminService;
 
-
     @PostMapping("/register")
     public ResponseEntity<?> registerAdmin(@RequestBody Admin admin) {
         Admin savedAdmin = adminService.registerAdmin(admin);
         return ResponseEntity.ok(savedAdmin);
     }
-
 
     @PostMapping("/login")
     public ResponseEntity<?> loginAdmin(@RequestBody Map<String, String> credentials) {
