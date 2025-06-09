@@ -21,7 +21,7 @@ export default function VerifyOTP({ email, onVerify, onResendOTP, error, isLoadi
     <div className="bg-[#1e1e2e]/80 backdrop-blur-sm p-8 rounded-xl border border-red-900/50 max-w-md w-full">
       <h2 className="text-2xl font-bold text-red-500 mb-4">Verify OTP</h2>
       <p className="text-gray-300 mb-6">
-        We've sent a 6-digit code to <span className="text-red-400">{email}</span>
+        We&apos;ve sent a 6-digit code to <span className="text-red-400">{email}</span>
       </p>
 
       {error && (
@@ -60,7 +60,7 @@ export default function VerifyOTP({ email, onVerify, onResendOTP, error, isLoadi
       </form>
 
       <div className="mt-6 text-center text-gray-400">
-        Didn't receive code?{' '}
+        Didn&apos;t receive code?{' '}
         <button
           onClick={onResendOTP}
           className="text-red-400 hover:text-red-300 underline"

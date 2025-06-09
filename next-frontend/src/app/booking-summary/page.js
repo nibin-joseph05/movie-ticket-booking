@@ -429,7 +429,7 @@ export default function BookingSummaryPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            Please don't close this window or refresh the page
+            Please don&apos;t close this window or refresh the page
           </motion.p>
         </motion.div>
       </div>

@@ -45,16 +45,16 @@ export default function MovieDetailPage() {
           Oops! Movie Not Found
         </h1>
         <p className="text-lg text-gray-400 mt-2 text-center max-w-md">
-          We couldn't find the movie you're looking for. <br />
+          We couldn&apos;t find the movie you&apos;re looking for. <br />
           Please try searching again or explore other movies.
         </p>
-        <a
+        <Link // Changed from <a> to <Link>
           href="/movies"
           className="mt-5 px-8 py-3 bg-gradient-to-r from-red-600 to-red-800 text-white rounded-lg text-lg font-semibold
                     hover:from-red-700 hover:to-red-900 transition-all duration-300 shadow-lg transform hover:scale-105"
         >
           Back to Home
-        </a>
+        </Link>
       </div>
     );
   }

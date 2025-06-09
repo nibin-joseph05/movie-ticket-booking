@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import Image from 'next/image'; // Import the Image component
 
 export default function BookingSuccess() {
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ export default function BookingSuccess() {
   useEffect(() => {
     const fetchBookingData = async () => {
       try {
+        // Fetch booking details from your backend API
         const response = await axios.get(`http://localhost:8080/booking/${bookingId}`);
         if (response.data.status === 'success') {
           setBookingData(response.data.data);
@@ -32,11 +34,13 @@ export default function BookingSuccess() {
       }
     };
 
+    // Only fetch data if a bookingId is present in the URL
     if (bookingId) {
       fetchBookingData();
     }
-  }, [bookingId]);
+  }, [bookingId]); // Dependency array includes bookingId to re-run effect if ID changes
 
+  // Display a loading spinner while data is being fetched
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col">
@@ -49,6 +53,7 @@ export default function BookingSuccess() {
     );
   }
 
+  // Display an error message if data fetching fails or booking data is missing
   if (error || !bookingData) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col">
@@ -115,9 +120,11 @@ export default function BookingSuccess() {
           {/* Movie Poster and Basic Info */}
           <div className="p-6 border-b border-gray-800 flex flex-col md:flex-row gap-6">
             {movie.posterPath && (
-              <img
+              <Image // Changed from <img> to <Image>
                 src={movie.posterPath}
                 alt={movie.title}
+                width={128} // Corresponds to Tailwind's w-32 (128px)
+                height={192} // Corresponds to Tailwind's h-48 (192px)
                 className="w-32 h-48 object-cover rounded-lg shadow-lg border-2 border-gray-700 hover:border-red-500 transition-all duration-300"
               />
             )}

@@ -93,7 +93,7 @@ export default function Home() {
               Oops! No Movies Available
             </h2>
             <p className="text-lg text-gray-400 mt-2 max-w-md">
-              Currently, we couldn't find any movies to display. <br />
+              Currently, we couldn&apos;t find any movies to display. <br />
               Please check back later or explore other categories.
             </p>
           </div>

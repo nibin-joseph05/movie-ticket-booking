@@ -9,16 +9,16 @@ import {
 import { MdElectricRickshaw } from "react-icons/md";
 
 const seatIcons = [
-  <FaBicycle size={30} />,
-  <FaMotorcycle size={30} />,
-  <MdElectricRickshaw size={30} />,
-  <FaCar size={30} />,
-  <FaShuttleVan size={30} />,
-  <FaBus size={30} />,
-  <FaTrain size={30} />,
-  <FaTram size={30} />,
-  <FaShip size={30} />,
-  <FaRocket size={30} />
+  <FaBicycle key="bicycle" size={30} />, // Added key prop
+  <FaMotorcycle key="motorcycle" size={30} />, // Added key prop
+  <MdElectricRickshaw key="rickshaw" size={30} />, // Added key prop
+  <FaCar key="car" size={30} />, // Added key prop
+  <FaShuttleVan key="shuttlevan" size={30} />, // Added key prop
+  <FaBus key="bus" size={30} />, // Added key prop
+  <FaTrain key="train" size={30} />, // Added key prop
+  <FaTram key="tram" size={30} />, // Added key prop
+  <FaShip key="ship" size={30} />, // Added key prop
+  <FaRocket key="rocket" size={30} /> // Added key prop
 ];
 
 export default function SeatCategoryPopup({ onClose, selectedCategory, showtime, price, movie, theater, date }) {

@@ -321,9 +321,15 @@ export default function Login() {
                 "Processing..."
               ) : (
                 <>
-                  <img src="/google.png" alt="Google" className="mr-2 w-[20px] h-auto" />
-                  Continue with Google
-                </>
+                  <Image
+                      src="/google.png"
+                      alt="Google"
+                      width={20} // Explicitly set width
+                      height={20} // Explicitly set height (assuming square icon)
+                      className="mr-2 w-[20px] h-auto" // Keep Tailwind classes for visual size
+                    />
+                    Continue with Google
+                  </>
               )}
             </button>
           )}
@@ -413,7 +419,7 @@ export default function Login() {
               </a>
 
               <p className="mt-3">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <button
                   onClick={handleRegisterRedirect}
                   className="text-red-500 hover:text-white font-semibold"

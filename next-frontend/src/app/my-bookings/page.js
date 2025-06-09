@@ -273,7 +273,7 @@ export default function MyOrders() {
               </div>
               <h2 className="text-2xl font-bold text-gray-300 mb-2">No Bookings Found</h2>
               <p className="text-gray-400 mb-6">
-                It looks like you haven't booked any movies yet. Start exploring our collection!
+                It looks like you haven&apos;t booked any movies yet. Start exploring our collection!
               </p>
               <Link
                 href="/"

@@ -10,8 +10,10 @@ export default function AboutUs() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // This is a placeholder for your backend API.
+        // Ensure your backend is running on http://localhost:8080 or update this URL.
         const response = await fetch("http://localhost:8080/user/check-session", {
-          credentials: "include",
+          credentials: "include", // Important for sending cookies/session with the request
         });
         const data = await response.json();
         if (data.isLoggedIn) {
@@ -27,9 +29,10 @@ export default function AboutUs() {
     };
 
     checkSession();
-  }, []);
+  }, []); // Empty dependency array means this effect runs once on mount.
 
   const handleLogout = () => {
+    // Logic to clear user session (e.g., call a logout API) would go here.
     setUserName("");
     setIsLoggedIn(false);
   };
@@ -51,7 +54,7 @@ export default function AboutUs() {
 
         <p className="text-lg sm:text-xl text-gray-300 text-center max-w-3xl mx-auto mb-10 leading-relaxed">
           Movie-Flix is your ultimate destination to explore and book the latest movies playing near you. From
-          showtimes to seat selection, we’ve built a seamless experience that makes movie-going easier and more exciting.
+          showtimes to seat selection, we&apos;ve built a seamless experience that makes movie-going easier and more exciting.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 mt-10">
@@ -85,8 +88,8 @@ export default function AboutUs() {
           <div className="bg-black/40 p-6 rounded-xl shadow-md hover:shadow-lg transition">
             <h2 className="text-2xl font-semibold text-red-400 mb-3">🤝 Get in Touch</h2>
             <p className="text-gray-300">
-              We'd love to hear from you! Whether you're a movie buff or a theater owner, connect with us to collaborate,
-              share feedback, or just say hello. Together, let’s change the way India watches movies!
+              We&apos;d love to hear from you! Whether you&apos;re a movie buff or a theater owner, connect with us to collaborate,
+              share feedback, or just say hello. Together, let&apos;s change the way India watches movies!
             </p>
           </div>
         </div>
