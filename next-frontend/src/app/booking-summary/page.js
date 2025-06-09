@@ -62,8 +62,8 @@ function BookingSummaryContent() {
       const fetchData = async () => {
         try {
           const [detailsResponse, foodResponse] = await Promise.all([
-            fetch(`http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`),
-            fetch(`http://localhost:8080/api/food/items`)
+            fetch(`https://movie-ticket-booking-583u.onrender.com/booking/details?movieId=${movieId}&theaterId=${theaterId}`),
+            fetch(`https://movie-ticket-booking-583u.onrender.com/api/food/items`)
           ]);
 
           if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
@@ -98,7 +98,7 @@ function BookingSummaryContent() {
   useEffect(() => {
       const checkLoginStatus = async () => {
         try {
-          const response = await fetch('http://localhost:8080/user/check-session', {
+          const response = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
             credentials: 'include'
           });
 
@@ -155,7 +155,7 @@ function BookingSummaryContent() {
   const handleProceedToPayment = async () => {
     try {
       // 1. Check login status
-      const sessionCheck = await fetch('http://localhost:8080/user/check-session', {
+      const sessionCheck = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
         credentials: 'include'
       });
       const sessionData = await sessionCheck.json();
@@ -212,7 +212,7 @@ function BookingSummaryContent() {
       if (!shouldProceed) return;
 
       // 3. Create Razorpay order
-      const orderResponse = await fetch('http://localhost:8080/api/payments/create-order', {
+      const orderResponse = await fetch('https://movie-ticket-booking-583u.onrender.com/api/payments/create-order', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -273,7 +273,7 @@ function BookingSummaryContent() {
               seats: seats
             });
 
-            const verificationResponse = await fetch('http://localhost:8080/api/payments/verify-payment', {
+            const verificationResponse = await fetch('https://movie-ticket-booking-583u.onrender.com/api/payments/verify-payment', {
               method: 'POST',
               credentials: 'include',
               headers: {

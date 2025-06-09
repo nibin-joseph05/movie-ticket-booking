@@ -15,7 +15,7 @@ export default function MoviesPage() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/movies/genres");
+        const res = await axios.get("https://movie-ticket-booking-583u.onrender.com/movies/genres");
         if (res.data) {
           setGenres(res.data);
         }
@@ -30,7 +30,7 @@ export default function MoviesPage() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        let url = `http://localhost:8080/movies/now-playing?page=1`;
+        let url = `https://movie-ticket-booking-583u.onrender.com/movies/now-playing?page=1`;
         if (selectedGenre) url += `&genre=${encodeURIComponent(selectedGenre)}`;
         if (selectedLanguage) url += `&language=${selectedLanguage}`;
 

@@ -11,8 +11,8 @@ export default function AboutUs() {
     const checkSession = async () => {
       try {
         // This is a placeholder for your backend API.
-        // Ensure your backend is running on http://localhost:8080 or update this URL.
-        const response = await fetch("http://localhost:8080/user/check-session", {
+
+        const response = await fetch("https://movie-ticket-booking-583u.onrender.com/user/check-session", {
           credentials: "include", // Important for sending cookies/session with the request
         });
         const data = await response.json();

@@ -30,7 +30,7 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/user/details', {
+        const response = await axios.get('https://movie-ticket-booking-583u.onrender.com/user/details', {
           withCredentials: true
         });
         if (response.data) {
@@ -51,7 +51,7 @@ export default function AccountPage() {
 
   const handleSaveProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/user/details', {
+      const response = await axios.get('https://movie-ticket-booking-583u.onrender.com/user/details', {
         withCredentials: true
       });
       setUserData(response.data);
@@ -88,7 +88,7 @@ export default function AccountPage() {
 
     try {
       const response = await axios.post(
-        'http://localhost:8080/user/change-password',
+        'https://movie-ticket-booking-583u.onrender.com/user/change-password',
         {
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
@@ -112,7 +112,7 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:8080/auth/logout', {}, {
+      await axios.post('https://movie-ticket-booking-583u.onrender.com/auth/logout', {}, {
         withCredentials: true
       });
     } catch (err) {
@@ -228,7 +228,7 @@ export default function AccountPage() {
               <div className="flex flex-col items-center">
                 {userData.photoPath ? (
                   <img
-                    src={`http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
+                    src={`https://movie-ticket-booking-583u.onrender.com/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
                     alt="Profile"
                     className="w-32 h-32 rounded-full object-cover border-4 border-red-500/50 shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                     onError={(e) => {
@@ -373,7 +373,7 @@ export default function AccountPage() {
         >
           <div className="relative max-w-4xl max-h-full">
             <img
-              src={`http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
+              src={`https://movie-ticket-booking-583u.onrender.com/user/photo?path=${encodeURIComponent(userData.photoPath)}`}
               alt="Enlarged Profile"
               className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
             />

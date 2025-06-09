@@ -11,7 +11,7 @@ export default function TicketDownloadButton({ bookingRef, className }) {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:8080/booking/${bookingRef}/ticket`,
+        `https://movie-ticket-booking-583u.onrender.com/booking/${bookingRef}/ticket`,
         {
           responseType: 'blob',
           withCredentials: true

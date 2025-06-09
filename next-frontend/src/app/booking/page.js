@@ -29,7 +29,7 @@ function BookingPageContent() {
           try {
             // Fetch booking details
             const detailsResponse = await fetch(
-              `http://localhost:8080/booking/details?movieId=${movieId}&theaterId=${theaterId}`
+              `https://movie-ticket-booking-583u.onrender.com/booking/details?movieId=${movieId}&theaterId=${theaterId}`
             );
             if (!detailsResponse.ok) throw new Error("Failed to fetch booking details.");
             const detailsData = await detailsResponse.json();
@@ -37,7 +37,7 @@ function BookingPageContent() {
 
             // Fetch booked seats for this specific movie/showtime
             const seatsResponse = await fetch(
-              `http://localhost:8080/booking/booked-seats?movieId=${movieId}&theaterId=${theaterId}&showtime=${showtime}&date=${date}`
+              `https://movie-ticket-booking-583u.onrender.com/booking/booked-seats?movieId=${movieId}&theaterId=${theaterId}&showtime=${showtime}&date=${date}`
             );
             if (!seatsResponse.ok) throw new Error("Failed to fetch booked seats.");
             const seatsData = await seatsResponse.json();

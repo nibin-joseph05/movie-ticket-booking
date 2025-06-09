@@ -67,7 +67,7 @@ function LoginContent() { // Renamed from Login to LoginContent
 
   const checkSession = async () => {
     try {
-      const response = await fetch('http://localhost:8080/user/check-session', {
+      const response = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
         credentials: 'include'
       });
       const data = await response.json();
@@ -117,7 +117,7 @@ function LoginContent() { // Renamed from Login to LoginContent
     setIsSendingOtp(true);
 
     try {
-      const response = await fetch("http://localhost:8080/user/login", {
+      const response = await fetch("https://movie-ticket-booking-583u.onrender.com/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -184,7 +184,7 @@ function LoginContent() { // Renamed from Login to LoginContent
     try {
       const otpCode = otp.join("");
       const response = await axios.post(
-        "http://localhost:8080/user/verify-otp",
+        "https://movie-ticket-booking-583u.onrender.com/user/verify-otp",
         { email, otp: otpCode },
         { withCredentials: true }
       );
@@ -192,7 +192,7 @@ function LoginContent() { // Renamed from Login to LoginContent
       if (response.status === 200) {
         localStorage.setItem('user', JSON.stringify(response.data));
 
-        const sessionResponse = await fetch('http://localhost:8080/user/check-session', {
+        const sessionResponse = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
           credentials: 'include'
         });
         const sessionData = await sessionResponse.json();
@@ -248,7 +248,7 @@ function LoginContent() { // Renamed from Login to LoginContent
       sessionStorage.setItem('returnUrl', '/booking-summary');
     }
 
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    window.location.href = "https://movie-ticket-booking-583u.onrender.com/oauth2/authorization/google";
   };
 
   return (

@@ -44,7 +44,7 @@ export default function BookingDetails({ params }) {
 
     try {
       const response = await axios.post(
-        `http://localhost:8080/booking/${booking.reference}/cancel`,
+        `https://movie-ticket-booking-583u.onrender.com/booking/${booking.reference}/cancel`,
         {},
         { withCredentials: true }
       );
@@ -128,7 +128,7 @@ export default function BookingDetails({ params }) {
       try {
         const { id } = await params;
         const response = await axios.get(
-          `http://localhost:8080/booking/${id}`,
+          `https://movie-ticket-booking-583u.onrender.com/booking/${id}`,
           { withCredentials: true }
         );
 

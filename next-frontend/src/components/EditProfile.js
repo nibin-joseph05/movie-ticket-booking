@@ -11,7 +11,7 @@ const EditProfile = ({ userData, onSave, onCancel }) => {
     photo: null
   });
   const [photoPreview, setPhotoPreview] = useState(userData.photoPath ?
-    `http://localhost:8080/user/photo?path=${encodeURIComponent(userData.photoPath)}` : null
+    `https://movie-ticket-booking-583u.onrender.com/user/photo?path=${encodeURIComponent(userData.photoPath)}` : null
   );
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
@@ -99,7 +99,7 @@ const EditProfile = ({ userData, onSave, onCancel }) => {
       if (formData.phoneNumber !== userData.phoneNumber) {
         formDataToSend.append('phoneNumber', formData.phoneNumber);
         if (!verificationSent) {
-          await axios.post('http://localhost:8080/user/send-verification', {}, { withCredentials: true });
+          await axios.post('https://movie-ticket-booking-583u.onrender.com/user/send-verification', {}, { withCredentials: true });
           setVerificationSent(true);
           setSuccess('Verification code sent to your email');
           return;
@@ -111,7 +111,7 @@ const EditProfile = ({ userData, onSave, onCancel }) => {
         formDataToSend.append('userPhotoPath', formData.photo);
       }
 
-      const response = await axios.put('http://localhost:8080/user/update', formDataToSend, {
+      const response = await axios.put('https://movie-ticket-booking-583u.onrender.com/user/update', formDataToSend, {
             headers: { 'Content-Type': 'multipart/form-data' },
             withCredentials: true
           });

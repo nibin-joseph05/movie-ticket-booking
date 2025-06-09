@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 @RequestMapping("/movies")
 public class MovieController {
 

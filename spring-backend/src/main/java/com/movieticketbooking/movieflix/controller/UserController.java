@@ -36,7 +36,7 @@ import jakarta.servlet.http.HttpSession;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app", allowCredentials = "true")
 @RequestMapping("/user")
 public class UserController {
 
@@ -188,7 +188,7 @@ public class UserController {
             HttpServletResponse response) throws IOException {
 
         if (oauth2User == null) {
-            response.sendRedirect("http://localhost:3000/login?error=google_auth_failed");
+            response.sendRedirect("https://movieflix-sooty.vercel.app/login?error=google_auth_failed");
             return;
         }
 
@@ -196,7 +196,7 @@ public class UserController {
         String googleId = oauth2User != null ? oauth2User.getAttribute("sub") : null;
 
         if (email == null || googleId == null) {
-            response.sendRedirect("http://localhost:3000/login?error=invalid_google_response");
+            response.sendRedirect("https://movieflix-sooty.vercel.app/login?error=invalid_google_response");
             return;
         }
 
@@ -207,7 +207,7 @@ public class UserController {
             String encodedState = state != null ? URLEncoder.encode(state, "UTF-8") : "";
 
             response.sendRedirect(
-                    "http://localhost:3000/login?error=no_account" +
+                    "https://movieflix-sooty.vercel.app/login?error=no_account" +
                             "&message=Account+not+found.+Please+register." +
                             "&email=" + encodedEmail +
                             "&from=google" +
@@ -237,7 +237,7 @@ public class UserController {
             }
         }
 
-        response.sendRedirect("http://localhost:3000" + returnUrl);
+        response.sendRedirect("https://movieflix-sooty.vercel.app" + returnUrl);
     }
 
     @GetMapping("/photo")

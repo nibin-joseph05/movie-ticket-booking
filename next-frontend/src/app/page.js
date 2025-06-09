@@ -14,7 +14,7 @@ export default function Home() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('http://localhost:8080/user/check-session', {
+        const response = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
           credentials: 'include'
         });
         const data = await response.json();
@@ -49,7 +49,7 @@ export default function Home() {
 
     const fetchMovies = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/movies/now-playing");
+        const res = await axios.get("https://movie-ticket-booking-583u.onrender.com/movies/now-playing");
         if (res.data && res.data.results) {
           setMovies(res.data.results);
         }

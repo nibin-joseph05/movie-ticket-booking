@@ -18,7 +18,7 @@ export default function Header({ onLogout }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const response = await fetch('http://localhost:8080/user/check-session', {
+        const response = await fetch('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
           credentials: 'include'
         });
         const data = await response.json();
@@ -53,7 +53,7 @@ export default function Header({ onLogout }) {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/user/logout", {
+      await fetch("https://movie-ticket-booking-583u.onrender.com/user/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -71,7 +71,7 @@ export default function Header({ onLogout }) {
     if (query.length > 2) {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:8080/movies/search?name=${query}`);
+        const response = await fetch(`https://movie-ticket-booking-583u.onrender.com/movies/search?name=${query}`);
         const data = await response.json();
         setSearchResults(data.length ? data.slice(0, 5) : []);
       } catch (error) {

@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/theatres")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 public class TheatreController {
 
     @Value("${google.api.key}")

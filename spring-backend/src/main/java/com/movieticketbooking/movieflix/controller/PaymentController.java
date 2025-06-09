@@ -10,7 +10,7 @@ import com.movieticketbooking.movieflix.models.User;
 import java.util.Map;
 
 
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {

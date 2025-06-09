@@ -22,7 +22,7 @@ function BookingSuccessContent() {
     const fetchBookingData = async () => {
       try {
         // Fetch booking details from your backend API
-        const response = await axios.get(`http://localhost:8080/booking/${bookingId}`);
+        const response = await axios.get(`https://movie-ticket-booking-583u.onrender.com/booking/${bookingId}`);
         if (response.data.status === 'success') {
           setBookingData(response.data.data);
         } else {

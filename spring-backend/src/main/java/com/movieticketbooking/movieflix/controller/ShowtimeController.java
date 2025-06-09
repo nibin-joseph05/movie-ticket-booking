@@ -7,7 +7,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/showtimes")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 public class ShowtimeController {
 
     @GetMapping

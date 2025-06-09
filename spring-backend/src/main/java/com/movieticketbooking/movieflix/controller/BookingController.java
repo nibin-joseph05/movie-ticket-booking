@@ -24,7 +24,7 @@ import java.time.format.DateTimeParseException;
 
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 @RequestMapping("/booking")
 public class BookingController {
 

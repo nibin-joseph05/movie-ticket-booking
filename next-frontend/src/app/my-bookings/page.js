@@ -85,7 +85,7 @@ export default function MyOrders() {
   useEffect(() => {
     const fetchUserAndBookings = async () => {
       try {
-        const sessionResponse = await axios.get('http://localhost:8080/user/check-session', {
+        const sessionResponse = await axios.get('https://movie-ticket-booking-583u.onrender.com/user/check-session', {
           withCredentials: true
         });
 
@@ -99,7 +99,7 @@ export default function MyOrders() {
         setUser(userData);
 
         const bookingsResponse = await axios.get(
-          `http://localhost:8080/booking/user/${userData.id}`,
+          `https://movie-ticket-booking-583u.onrender.com/booking/user/${userData.id}`,
           { withCredentials: true }
         );
 
@@ -184,7 +184,7 @@ export default function MyOrders() {
   const handleCancelBooking = async (bookingRef) => {
     try {
       const response = await axios.post(
-        `http://localhost:8080/booking/${bookingRef}/cancel`,
+        `https://movie-ticket-booking-583u.onrender.com/booking/${bookingRef}/cancel`,
         {},
         { withCredentials: true }
       );
@@ -490,7 +490,7 @@ export default function MyOrders() {
                               onClick={async () => {
                                 try {
                                   const response = await fetch(
-                                    `http://localhost:8080/booking/${booking.reference}/ticket`,
+                                    `https://movie-ticket-booking-583u.onrender.com/booking/${booking.reference}/ticket`,
                                     {
                                       credentials: 'include',
                                       headers: {

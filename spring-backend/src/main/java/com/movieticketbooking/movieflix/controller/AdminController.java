@@ -24,7 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 @RequestMapping("/admin")
 public class AdminController {
 

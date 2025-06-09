@@ -7,7 +7,7 @@ import { FiSearch, FiClock, FiDollarSign } from "react-icons/fi";
 import { format } from "date-fns";
 
 
-const API_URL = "http://localhost:8080/admin";
+const API_URL = "https://movie-ticket-booking-583u.onrender.com/admin";
 
 export default function BookingList() {
   const router = useRouter();

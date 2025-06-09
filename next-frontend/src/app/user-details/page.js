@@ -23,7 +23,7 @@ export default function UserDetails() {
     const fetchUsers = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8080/admin/users?search=${searchTerm}&limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}`
+          `https://movie-ticket-booking-583u.onrender.com/admin/users?search=${searchTerm}&limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}`
         );
         const data = await response.json();
         setUsers(data.users);
@@ -96,7 +96,7 @@ export default function UserDetails() {
                     <td className="px-6 py-4">
                       {user.userPhotoPath ? (
                         <img
-                          src={`http://localhost:8080/user/photo?path=${encodeURIComponent(
+                          src={`https://movie-ticket-booking-583u.onrender.com/user/photo?path=${encodeURIComponent(
                             user.userPhotoPath
                           )}`}
                           alt="User"

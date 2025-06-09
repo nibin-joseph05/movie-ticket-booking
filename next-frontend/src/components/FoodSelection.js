@@ -16,7 +16,7 @@ export default function FoodSelection({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/food/categories');
+        const response = await fetch('https://movie-ticket-booking-583u.onrender.com/api/food/categories');
         const data = await response.json();
         const uniqueCategories = ['best-foods', ...data.filter(cat => cat !== 'best-foods')];
         setCategories(uniqueCategories);
@@ -31,9 +31,9 @@ export default function FoodSelection({
   const fetchFoodItems = async () => {
     setLoading(true);
     try {
-      let url = `http://localhost:8080/api/food/items?category=${activeCategory}`;
+      let url = `https://movie-ticket-booking-583u.onrender.com/api/food/items?category=${activeCategory}`;
       if (searchQuery.trim()) {
-        url = `http://localhost:8080/api/food/search?query=${encodeURIComponent(searchQuery.trim())}`;
+        url = `https://movie-ticket-booking-583u.onrender.com/api/food/search?query=${encodeURIComponent(searchQuery.trim())}`;
       }
       const response = await fetch(url);
       const data = await response.json();

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import { FiDollarSign, FiPackage, FiPercent } from "react-icons/fi";
 
-const API_URL = "http://localhost:8080/admin";
+const API_URL = "https://movie-ticket-booking-583u.onrender.com/admin";
 
 export default function ProfitPage() {
   const router = useRouter();

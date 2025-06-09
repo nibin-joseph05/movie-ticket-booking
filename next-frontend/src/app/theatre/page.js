@@ -21,7 +21,7 @@ function TheatreContent() {
   const fetchMovieDetails = useCallback(async () => {
     try {
       const res = await fetch(
-        `http://localhost:8080/movies/details?id=${encodeURIComponent(movieId)}`
+        `https://movie-ticket-booking-583u.onrender.com/movies/details?id=${encodeURIComponent(movieId)}`
       );
       const data = await res.json();
       setMovie(data);
@@ -52,7 +52,7 @@ function TheatreContent() {
   const fetchNearbyTheatres = useCallback(async (lat, lon) => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/theatres/nearby", {
+      const res = await fetch("https://movie-ticket-booking-583u.onrender.com/theatres/nearby", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lon }),

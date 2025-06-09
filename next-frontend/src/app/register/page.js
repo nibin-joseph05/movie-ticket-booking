@@ -170,7 +170,7 @@ function RegisterContent() { // Renamed from original 'Register'
     }
 
     try {
-      const response = await fetch("http://localhost:8080/user/register", {
+      const response = await fetch("https://movie-ticket-booking-583u.onrender.com/user/register", {
         method: "POST",
         body: formDataToSend,
       });

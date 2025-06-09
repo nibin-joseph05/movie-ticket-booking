@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.UUID;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://movieflix-sooty.vercel.app")
 @RequestMapping("/api/food")
 public class FoodController {
 

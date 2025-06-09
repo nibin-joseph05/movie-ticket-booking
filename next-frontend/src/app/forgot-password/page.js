@@ -24,7 +24,7 @@ export default function ForgotPassword() {
 
     try {
       // Replace with your API endpoint
-      await axios.post('http://localhost:8080/user/forgot-password', { email });
+      await axios.post('https://movie-ticket-booking-583u.onrender.com/user/forgot-password', { email });
       setStep('otp');
       setSuccess('OTP sent to your email!');
     } catch (err) {
@@ -40,7 +40,7 @@ export default function ForgotPassword() {
 
     try {
       // Replace with your API endpoint
-      await axios.post('http://localhost:8080/user/verify-reset-otp', { email, otp });
+      await axios.post('https://movie-ticket-booking-583u.onrender.com/user/verify-reset-otp', { email, otp });
       setStep('password');
       setSuccess('OTP verified successfully!');
     } catch (err) {
@@ -55,7 +55,7 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      await axios.post('http://localhost:8080/user/resend-otp', {
+      await axios.post('https://movie-ticket-booking-583u.onrender.com/user/resend-otp', {
         email,
         purpose: "PASSWORD_RESET"
       });
@@ -76,7 +76,7 @@ export default function ForgotPassword() {
         throw new Error('Passwords do not match');
       }
 
-      await axios.post('http://localhost:8080/user/reset-password', {
+      await axios.post('https://movie-ticket-booking-583u.onrender.com/user/reset-password', {
         email,
         newPassword,
         confirmPassword

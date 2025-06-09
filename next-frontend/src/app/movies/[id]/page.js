@@ -14,7 +14,7 @@ export default function MovieDetailPage() {
   useEffect(() => {
     const fetchMovieDetails = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/movies/details?id=${id}`);
+        const res = await axios.get(`https://movie-ticket-booking-583u.onrender.com/movies/details?id=${id}`);
         if (res.data) {
           setMovie(res.data);
         }

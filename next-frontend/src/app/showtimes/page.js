@@ -67,7 +67,7 @@ function ShowtimesContent() {
     }
     setLoading(true); // Indicate loading for movie details
     try {
-      const res = await fetch(`http://localhost:8080/movies/details?id=${movieId}`);
+      const res = await fetch(`https://movie-ticket-booking-583u.onrender.com/movies/details?id=${movieId}`);
       const data = await res.json();
       setMovieDetails(data);
     } catch (error) {
@@ -86,7 +86,7 @@ function ShowtimesContent() {
     }
     setLoading(true); // Indicate loading for theatre details
     try {
-      const res = await fetch(`http://localhost:8080/theatres/details?theatreId=${theatreId}`);
+      const res = await fetch(`https://movie-ticket-booking-583u.onrender.com/theatres/details?theatreId=${theatreId}`);
       const data = await res.json();
       setTheatreDetails(data);
     } catch (error) {
@@ -106,7 +106,7 @@ function ShowtimesContent() {
     setLoading(true);
     setFetchError(null); // Clear previous errors
     try {
-      const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
+      const res = await fetch(`https://movie-ticket-booking-583u.onrender.com/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
 
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
@@ -155,7 +155,7 @@ function ShowtimesContent() {
   useEffect(() => {
     const fetchSeatPrices = async () => {
       try {
-        const response = await fetch("http://localhost:8080/showtimes/seat-prices");
+        const response = await fetch("https://movie-ticket-booking-583u.onrender.com/showtimes/seat-prices");
         if (!response.ok) throw new Error("Failed to fetch seat prices");
         const data = await response.json();
         setSeatPrices(data);
@@ -190,7 +190,7 @@ function ShowtimesContent() {
 
   const handleSeatSelection = async (seats, category) => {
     try {
-      const response = await fetch("http://localhost:8080/showtimes/book-ticket", {
+      const response = await fetch("https://movie-ticket-booking-583u.onrender.com/showtimes/book-ticket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
