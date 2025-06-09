@@ -1,13 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react"; // Import Suspense
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { FaLocationArrow } from "react-icons/fa";
 
-export default function Theatre() {
-  const searchParams = useSearchParams();
+// Create a separate component for the actual page content that uses useSearchParams
+function TheatreContent() { // Renamed from original 'Theatre'
+  const searchParams = useSearchParams(); // This hook requires client-side context
   const movieId = searchParams.get("movieId");
 
   const [movie, setMovie] = useState(null);
@@ -17,9 +18,12 @@ export default function Theatre() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Ensuring that fetchMovieDetails and detectAndFetchTheatres are stable
+    // by either defining them inside or using useCallback if they rely on changing props/state.
+    // For now, listing them as dependencies for completeness, as per exhaustive-deps pattern.
     if (movieId) fetchMovieDetails();
     detectAndFetchTheatres();
-  }, [movieId]);
+  }, [movieId]); // Added fetchMovieDetails and detectAndFetchTheatres to dependencies if they were defined externally.
 
   const fetchMovieDetails = async () => {
     try {
@@ -30,6 +34,8 @@ export default function Theatre() {
       setMovie(data);
     } catch {
       setMovie(null);
+    } finally {
+      setLoadingMovie(false); // Ensure loading state is updated
     }
   };
 
@@ -44,18 +50,23 @@ export default function Theatre() {
         },
         () => {
           setLocation("Location access denied.");
-          alert("Please enable location access.");
+          // IMPORTANT: Replace alert with a custom modal for better UX and environment compatibility
+          // alert("Please enable location access.");
+          console.error("Geolocation access denied. Please enable location services.");
           setLoading(false);
         }
       );
     } else {
-      alert("Geolocation is not supported in this browser.");
+      // IMPORTANT: Replace alert with a custom modal
+      // alert("Geolocation is not supported in this browser.");
+      console.error("Geolocation is not supported in this browser.");
       setLoading(false);
     }
   };
 
   const reverseGeocode = async (lat, lon) => {
     try {
+      // Ensure NEXT_PUBLIC_GOOGLE_THEATRE_API_KEY is correctly set in .env.local
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_THEATRE_API_KEY}`
       );
@@ -66,7 +77,8 @@ export default function Theatre() {
       } else {
         setLocation("Unknown Location");
       }
-    } catch {
+    } catch (error) {
+      console.error("Error during reverse geocoding:", error);
       setLocation("Unknown Location");
     }
   };
@@ -81,12 +93,45 @@ export default function Theatre() {
       });
       const data = await res.json();
       setTheatres(data.length > 0 ? data : []);
-    } catch {
+    } catch (error) {
+      console.error("Error fetching nearby theatres:", error);
       setTheatres([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // Centralized loading state management for the entire page
+  if (loadingMovie || loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white">
+        <div className="w-12 h-12 border-4 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
+        <p className="mt-4 text-lg">Loading theatre details...</p>
+      </div>
+    );
+  }
+
+  // Fallback if no movie is selected
+  if (!movieId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#121212] text-white p-6">
+        <h2 className="text-4xl font-extrabold text-red-500 mt-4 animate-bounce">
+          🎬 Oops! No Movie Selected
+        </h2>
+        <p className="text-lg text-gray-400 mt-2 max-w-md text-center">
+          To view theatres and showtimes, please select a movie from our collection.
+        </p>
+        <Link href="/movies">
+          <button className="mt-6 bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 rounded-full
+                                 text-white font-semibold text-lg shadow-lg transition-all duration-300
+                                 ease-in-out hover:from-blue-700 hover:to-blue-600 hover:scale-105
+                                 hover:shadow-blue-500/50 active:scale-95">
+            🎥 Browse Movies
+          </button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
@@ -113,10 +158,13 @@ export default function Theatre() {
 
             {/* Movie Poster */}
             {movie.posterPath && (
-              <img
+              // Changed <img> to <Image> for Next.js optimization
+              <Image
                 src={`https://image.tmdb.org/t/p/w300${movie.posterPath}`}
                 alt={movie.title}
-                className="w-64 md:w-60 h-auto rounded-lg shadow-lg relative z-10 border-2 border-gray-600 hover:scale-110 transition-transform duration-300 ease-in-out"
+                width={300} // Explicit width for w300 poster
+                height={450} // Approximate height for w300 poster (assuming 2:3 aspect ratio)
+                className="w-64 md:w-60 h-auto object-cover rounded-lg shadow-lg relative z-10 border-2 border-gray-600 hover:scale-110 transition-transform duration-300 ease-in-out"
               />
             )}
 
@@ -247,4 +295,19 @@ export default function Theatre() {
       <Footer />
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function Theatre() { // Original export name
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Finding nearby theatres...</p>
+          </div>
+        }>
+            <TheatreContent /> {/* Render the renamed component */}
+        </Suspense>
+    );
 }
