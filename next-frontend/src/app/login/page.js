@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // Import Suspense
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import axios from "axios";
 
-export default function Login() {
+// Create a separate component for the actual page content that uses useSearchParams
+function LoginContent() { // Renamed from Login to LoginContent
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -21,12 +22,13 @@ export default function Login() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // useSearchParams is used here
   const returnUrl = searchParams.get("returnUrl");
   const isOtpComplete = otp.every((digit) => digit !== "");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   useEffect(() => {
+    // This effect runs client-side, accessing window.location.search
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const message = params.get('message');
@@ -447,4 +449,19 @@ export default function Login() {
       <Footer />
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function Login() { // Original export name
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading login page...</p>
+          </div>
+        }>
+            <LoginContent /> {/* Render the renamed component */}
+        </Suspense>
+    );
 }
