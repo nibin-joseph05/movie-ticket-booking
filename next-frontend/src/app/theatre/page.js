@@ -5,8 +5,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { FaLocationArrow } from "react-icons/fa";
+import { Suspense } from "react";
 
-export default function Theatre() {
+function TheatreContent() {
   const searchParams = useSearchParams();
   const movieId = searchParams.get("movieId");
 
@@ -94,7 +95,6 @@ export default function Theatre() {
       <div className="border-t border-gray-700 shadow-lg"></div>
 
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
-
         {/* Movie Section with Blurred Background */}
         {movie ? (
           <div
@@ -135,14 +135,14 @@ export default function Theatre() {
                 {/* Buttons - Back & Choose Another Movie */}
                 <div className="mt-3 flex flex-col sm:flex-row gap-3 justify-center">
                   <button
-                    onClick={() => window.history.back()} // Go to the previous page
+                    onClick={() => window.history.back()}
                     className="bg-red-600 px-4 py-2 rounded-md text-white font-medium text-sm shadow-md transition-transform hover:scale-105 hover:shadow-red-500/50"
                   >
                     ⬅️ Go Back
                   </button>
 
                   <button
-                    onClick={() => window.location.href = "/movies"} // Go to movie selection page
+                    onClick={() => window.location.href = "/movies"}
                     className="bg-blue-600 px-4 py-2 rounded-md text-white font-medium text-sm shadow-md transition-transform hover:scale-105 hover:shadow-blue-500/50"
                   >
                     🎬 Choose Another Movie
@@ -169,7 +169,6 @@ export default function Theatre() {
             </Link>
           </div>
         )}
-
 
         {/* White Separator Line */}
         <div className="border-t border-gray-400 my-6"></div>
@@ -233,9 +232,7 @@ export default function Theatre() {
                       >
                         ❌ No Movie Selected ❌
                       </button>
-
                     )}
-
                   </div>
                 </div>
               ))}
@@ -246,5 +243,13 @@ export default function Theatre() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function Theatre() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <TheatreContent />
+    </Suspense>
   );
 }
