@@ -2,16 +2,18 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react'; // Import Suspense
 import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import Image from 'next/image'; // Import the Image component
+import Image from 'next/image';
 
-export default function BookingSuccess() {
+// Create a separate component for the actual page content that uses useSearchParams
+// This allows the parent component to be wrapped in Suspense
+function BookingSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const bookingId = searchParams.get('bookingId');
+  const bookingId = searchParams.get('bookingId'); // useSearchParams is used here
   const [bookingData, setBookingData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -213,4 +215,19 @@ export default function BookingSuccess() {
       <Footer />
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function BookingSuccessPage() {
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading booking details...</p>
+          </div>
+        }>
+            <BookingSuccessContent />
+        </Suspense>
+    );
 }
