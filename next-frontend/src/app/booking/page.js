@@ -1,11 +1,12 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // Import Suspense
 import SeatSelectionGrid from "@/components/SeatSelectionGrid";
 import { motion } from "framer-motion";
 
-export default function BookingPage() {
-  const searchParams = useSearchParams();
+// Create a separate component for the actual page content that uses useSearchParams
+function BookingPageContent() {
+  const searchParams = useSearchParams(); // useSearchParams is used here
 
   // Extract URL parameters
   const movieId = searchParams.get("movie");
@@ -50,7 +51,7 @@ export default function BookingPage() {
         };
 
         fetchData();
-      }, [movieId, theaterId, showtime, date]);
+      }, [movieId, theaterId, showtime, date]); // Dependencies for useEffect
 
   // Handle back button click
   const handleBack = () => {
@@ -61,6 +62,8 @@ export default function BookingPage() {
   const handleBookAndPay = () => {
     // Check if the user is trying to proceed with fewer seats than initially specified
     if (selectedSeats.length < seats) {
+      // You should replace window.confirm with a custom modal/message box
+      // as window.confirm is not ideal in a React component
       const confirmProceed = window.confirm(
         `You are trying to proceed with ${selectedSeats.length} seat(s), but you initially selected ${seats} seat(s). Do you want to continue?`
       );
@@ -78,6 +81,7 @@ export default function BookingPage() {
       price: totalPrice.toFixed(2), // Use the dynamically calculated price
       date,
     });
+    // Use window.location.href for full page reload to the summary page with updated parameters
     window.location.href = `/booking-summary?${queryParams.toString()}`;
   };
 
@@ -201,4 +205,19 @@ export default function BookingPage() {
       </div>
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function BookingPage() {
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading seat selection...</p>
+          </div>
+        }>
+            <BookingPageContent />
+        </Suspense>
+    );
 }
