@@ -23,7 +23,7 @@ RUN ./mvnw clean install -DskipTests
 
 # --- Stage 2: Create the final runtime image ---
 # Use a smaller JRE-only image for the final application, as it's lighter
-FROM openjdk:21-jre-headless
+FROM eclipse-temurin:21-jre
 
 # Set the working directory for the final image
 WORKDIR /app
