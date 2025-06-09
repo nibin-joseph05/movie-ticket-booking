@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react"; // Import Suspense
+import { useEffect, useState, Suspense, useCallback } from "react"; // Import useCallback
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,8 +9,8 @@ import MovieInfo from "@/components/MovieInfo";
 import SeatCategoryPopup from "@/components/SeatCategoryPopup";
 
 // Create a separate component for the actual page content that uses useSearchParams
-function ShowtimesContent() { // Renamed from original 'Showtimes'
-  const searchParams = useSearchParams(); // This hook requires client-side context
+function ShowtimesContent() {
+  const searchParams = useSearchParams();
   const movieId = searchParams.get("movieId");
   const theatreId = searchParams.get("theatreId");
 
@@ -57,58 +57,54 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
     getShowtimeStatus(show.time, selectedDate) !== 'ended'
   );
 
-  useEffect(() => {
-    // Add these functions to the dependency array, or define them inside the effect if they don't need to be recreated
-    // For now, including them as dependencies to satisfy the exhaustive-deps warning if it existed.
-    // If they are stable or memoized, you might remove them if that's the intention.
-    if (theatreId) {
-      fetchTheatreDetails();
-    }
-    if (movieId && theatreId) {
-      fetchShowtimes();
-    }
-    if (movieId) {
-      fetchMovieDetails();
-    }
-  }, [movieId, theatreId, selectedDate, fetchMovieDetails, fetchTheatreDetails, fetchShowtimes]); // Added fetch functions as dependencies
+  // --- Start: Apply useCallback to fetch functions ---
 
-  useEffect(() => {
-    const fetchSeatPrices = async () => {
-      try {
-        const response = await fetch("http://localhost:8080/showtimes/seat-prices");
-        if (!response.ok) throw new Error("Failed to fetch seat prices");
-        const data = await response.json();
-        setSeatPrices(data);
-      } catch (error) {
-        console.error("Error fetching seat prices:", error);
-      }
-    };
-
-    fetchSeatPrices();
-  }, []); // Empty dependency array, runs once on mount.
-
-  const fetchMovieDetails = async () => {
+  const fetchMovieDetails = useCallback(async () => {
+    if (!movieId) {
+        setMovieDetails(null); // Clear previous details if movieId is missing
+        setLoading(false); // Make sure loading state is handled
+        return;
+    }
+    setLoading(true); // Indicate loading for movie details
     try {
       const res = await fetch(`http://localhost:8080/movies/details?id=${movieId}`);
       const data = await res.json();
       setMovieDetails(data);
     } catch (error) {
       console.error("Error fetching movie details:", error);
+      setMovieDetails(null); // Clear movie details on error
+    } finally {
+      setLoading(false); // Ensure loading is set to false
     }
-  };
+  }, [movieId]); // Dependency on movieId
 
-  const fetchTheatreDetails = async () => {
+  const fetchTheatreDetails = useCallback(async () => {
+    if (!theatreId) {
+        setTheatreDetails(null); // Clear previous details if theatreId is missing
+        setLoading(false); // Make sure loading state is handled
+        return;
+    }
+    setLoading(true); // Indicate loading for theatre details
     try {
       const res = await fetch(`http://localhost:8080/theatres/details?theatreId=${theatreId}`);
       const data = await res.json();
       setTheatreDetails(data);
     } catch (error) {
       console.error("Error fetching theatre details:", error);
+      setTheatreDetails(null); // Clear theatre details on error
+    } finally {
+      setLoading(false); // Ensure loading is set to false
     }
-  };
+  }, [theatreId]); // Dependency on theatreId
 
-  const fetchShowtimes = async () => {
+  const fetchShowtimes = useCallback(async () => {
+    if (!theatreId || !movieId || !selectedDate) {
+        setShowtimes([]); // Clear showtimes if necessary IDs are missing
+        setLoading(false); // Make sure loading state is handled
+        return;
+    }
     setLoading(true);
+    setFetchError(null); // Clear previous errors
     try {
       const res = await fetch(`http://localhost:8080/showtimes?theatreId=${theatreId}&movieId=${movieId}&date=${selectedDate}`);
 
@@ -133,12 +129,44 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
       }
     } catch (error) {
       console.error("Fetch error:", error);
-      setFetchError(error.message); // Set fetchError here
+      setFetchError(error.message);
       setShowtimes([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [theatreId, movieId, selectedDate]); // Dependencies on theatreId, movieId, selectedDate
+
+  // --- End: Apply useCallback to fetch functions ---
+
+  // This useEffect will now correctly call the memoized functions
+  useEffect(() => {
+    if (theatreId) {
+      fetchTheatreDetails();
+    }
+    if (movieId && theatreId) {
+      fetchShowtimes();
+    }
+    if (movieId) {
+      fetchMovieDetails();
+    }
+  }, [movieId, theatreId, selectedDate, fetchMovieDetails, fetchTheatreDetails, fetchShowtimes]);
+
+  // This useEffect for seat prices can remain as is, it's independent
+  useEffect(() => {
+    const fetchSeatPrices = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/showtimes/seat-prices");
+        if (!response.ok) throw new Error("Failed to fetch seat prices");
+        const data = await response.json();
+        setSeatPrices(data);
+      } catch (error) {
+        console.error("Error fetching seat prices:", error);
+      }
+    };
+
+    fetchSeatPrices();
+  }, []); // Empty dependency array, runs once on mount.
+
 
   const getNextSevenDays = () => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -155,12 +183,8 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
   };
 
   const handleBack = () => {
-    // Replace window.confirm with a custom modal or message box
-    // For demonstration, let's use a simple console.log
     console.log("Are you sure you want to go back?");
-    // Implement your own modal logic here.
-    // If user confirms via your modal, then execute window.history.back();
-    window.history.back(); // Temporarily keeping for functionality, but replace in production.
+    window.history.back();
   };
 
 
@@ -172,9 +196,9 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
         body: JSON.stringify({
           theatreId,
           movieId,
-          time: activeShowtime.time, // Ensure activeShowtime is not null
-          category: category.type, // Pass category type
-          seats, // Pass seats selected
+          time: activeShowtime.time,
+          category: category.type,
+          seats,
         }),
         credentials: "include",
       });
@@ -295,7 +319,7 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
 
               return (
                 <motion.div
-                  key={index} // Added key for mapped element
+                  key={index}
                   className={`relative backdrop-blur-lg p-6 rounded-2xl shadow-xl border ${
                     isRunning
                       ? 'border-yellow-500 bg-yellow-900/20'
@@ -323,7 +347,7 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
                       <div className="mt-3 flex justify-center space-x-3">
                         {show.seatCategories?.map((cat) => (
                           <button
-                            key={cat.type} // Added key for mapped element
+                            key={cat.type}
                             className={`px-4 py-2 rounded-lg font-semibold text-sm ${
                               selectedCategory?.type === cat.type
                                 ? "bg-gradient-to-r from-red-500 to-red-700"
@@ -417,16 +441,15 @@ function ShowtimesContent() { // Renamed from original 'Showtimes'
 }
 
 // Export the default function which wraps the content in Suspense
-export default function Showtimes() { // Original export name
+export default function Showtimes() {
     return (
         <Suspense fallback={
-          // You can put a loading spinner or any placeholder here
           <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
             <p className="mt-4 text-lg">Loading showtimes...</p>
           </div>
         }>
-            <ShowtimesContent /> {/* Render the renamed component */}
+            <ShowtimesContent />
         </Suspense>
     );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react"; // Import useCallback
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -17,45 +17,22 @@ function TheatreContent() {
   const [theatres, setTheatres] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (movieId) fetchMovieDetails();
-    detectAndFetchTheatres();
-  }, [movieId]);
-
-  const fetchMovieDetails = async () => {
+  // Define all functions using useCallback
+  const fetchMovieDetails = useCallback(async () => {
     try {
       const res = await fetch(
         `http://localhost:8080/movies/details?id=${encodeURIComponent(movieId)}`
       );
       const data = await res.json();
       setMovie(data);
+      setLoadingMovie(false);
     } catch {
       setMovie(null);
+      setLoadingMovie(false);
     }
-  };
+  }, [movieId]); // Add movieId to the dependency array
 
-  const detectAndFetchTheatres = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation("Fetching location...");
-          await reverseGeocode(latitude, longitude);
-          fetchNearbyTheatres(latitude, longitude);
-        },
-        () => {
-          setLocation("Location access denied.");
-          alert("Please enable location access.");
-          setLoading(false);
-        }
-      );
-    } else {
-      alert("Geolocation is not supported in this browser.");
-      setLoading(false);
-    }
-  };
-
-  const reverseGeocode = async (lat, lon) => {
+  const reverseGeocode = useCallback(async (lat, lon) => {
     try {
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_THEATRE_API_KEY}`
@@ -70,9 +47,9 @@ function TheatreContent() {
     } catch {
       setLocation("Unknown Location");
     }
-  };
+  }, []); // Empty dependency array as it doesn't depend on component scope variables
 
-  const fetchNearbyTheatres = async (lat, lon) => {
+  const fetchNearbyTheatres = useCallback(async (lat, lon) => {
     setLoading(true);
     try {
       const res = await fetch("http://localhost:8080/theatres/nearby", {
@@ -87,7 +64,36 @@ function TheatreContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array
+
+  const detectAndFetchTheatres = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocation("Fetching location...");
+          await reverseGeocode(latitude, longitude); // Call memoized function
+          fetchNearbyTheatres(latitude, longitude); // Call memoized function
+        },
+        () => {
+          setLocation("Location access denied.");
+          alert("Please enable location access.");
+          setLoading(false);
+        }
+      );
+    } else {
+      alert("Geolocation is not supported in this browser.");
+      setLoading(false);
+    }
+  }, [reverseGeocode, fetchNearbyTheatres]); // Add memoized functions to dependency array
+
+  // Now use the functions in useEffect
+  useEffect(() => {
+    if (movieId) {
+      fetchMovieDetails();
+    }
+    detectAndFetchTheatres();
+  }, [movieId, fetchMovieDetails, detectAndFetchTheatres]); // Add functions to dependency array
 
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
