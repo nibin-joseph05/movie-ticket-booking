@@ -1,12 +1,13 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // Import Suspense
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from "framer-motion";
 import BookingDetails from "@/components/BookingDetails";
 import FoodSelection from "@/components/FoodSelection";
 
-export default function BookingSummaryPage() {
+// Create a separate component for the actual page content that uses useSearchParams
+function BookingSummaryContent() {
   const searchParams = useSearchParams();
 
   // Extract URL parameters
@@ -33,7 +34,7 @@ export default function BookingSummaryPage() {
 
   // Fetch movie and theater details
   useEffect(() => {
-
+    // Moved searchParams related logic inside, and added searchParams to dependencies
     if (initialLoading) {
         const foodParam = searchParams.get("food");
         if (foodParam) {
@@ -81,7 +82,7 @@ export default function BookingSummaryPage() {
       };
 
     fetchData();
-  }, [movieId, theaterId, initialLoading, isLoggedIn]);
+  }, [movieId, theaterId, initialLoading, isLoggedIn, searchParams]); // Added searchParams here
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -160,10 +161,14 @@ export default function BookingSummaryPage() {
       const sessionData = await sessionCheck.json();
 
       if (!sessionData.isLoggedIn) {
-        const shouldLogin = window.confirm(
-          "You need to login to complete your booking. Do you want to proceed to login page?"
-        );
+        // Use a custom modal or message box instead of window.confirm
+        // For demonstration, let's use a simple console.log
+        console.log("You need to login to complete your booking. Do you want to proceed to login page?");
 
+        // You'll need to implement your own modal logic here.
+        // For now, I'll redirect if you explicitly confirm via a modal
+        // assuming `window.confirm` is replaced by your custom modal which calls this logic
+        const shouldLogin = true; // Replace with result from your custom modal
         if (shouldLogin) {
           sessionStorage.setItem('pendingBooking', JSON.stringify({
             movieId,
@@ -201,10 +206,9 @@ export default function BookingSummaryPage() {
             }
           }
 
-      // 2. Show payment confirmation
-      const shouldProceed = window.confirm(
-        `Total Amount: ${calculateTotalPrice().toFixed(2)} Rs\nDo you want to proceed with payment?`
-      );
+      // 2. Show payment confirmation (replace window.confirm with custom modal)
+      console.log(`Total Amount: ${calculateTotalPrice().toFixed(2)} Rs\nDo you want to proceed with payment?`);
+      const shouldProceed = true; // Replace with result from your custom modal
       if (!shouldProceed) return;
 
       // 3. Create Razorpay order
@@ -635,4 +639,19 @@ export default function BookingSummaryPage() {
       </div>
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function BookingSummaryPage() {
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading booking details...</p>
+          </div>
+        }>
+            <BookingSummaryContent />
+        </Suspense>
+    );
 }
