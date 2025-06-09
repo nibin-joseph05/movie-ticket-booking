@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // Ensure Suspense is imported
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function Register() {
+// This component contains the actual logic and uses useSearchParams
+function RegisterContent() { // Renamed from original 'Register'
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // This hook requires client-side context
   const returnUrl = searchParams.get("returnUrl");
 
   const [formData, setFormData] = useState({
@@ -55,7 +56,7 @@ export default function Register() {
 //        sessionStorage.removeItem('fromProvider');
 //      }
     }
-  }, []);
+  }, []); // Empty dependency array, runs once on mount.
 
   // Email validation with debouncing
   useEffect(() => {
@@ -91,7 +92,7 @@ export default function Register() {
 
     const timer = setTimeout(validateEmail, 500);
     return () => clearTimeout(timer);
-  }, [formData.email]);
+  }, [formData.email]); // Dependency on formData.email
 
   const generateStrongPassword = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
@@ -200,6 +201,7 @@ export default function Register() {
             Create Your Account
           </h2>
 
+          {/* Conditional rendering based on returnUrl */}
           {returnUrl && returnUrl.includes("booking-summary") && (
             <div className="mb-6 p-3 bg-purple-900/30 border border-purple-500 rounded-lg">
               <p className="text-center">
@@ -208,6 +210,7 @@ export default function Register() {
             </div>
           )}
 
+          {/* Error Modal */}
           {errorModal.show && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full">
@@ -362,4 +365,19 @@ export default function Register() {
       <Footer />
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function Register() { // Original export name
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading registration page...</p>
+          </div>
+        }>
+            <RegisterContent /> {/* Render the renamed component */}
+        </Suspense>
+    );
 }
