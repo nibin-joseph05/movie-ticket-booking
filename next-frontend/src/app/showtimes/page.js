@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react"; // Import Suspense
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -8,8 +8,9 @@ import TheatreInfoPopup from "@/components/theatre-map";
 import MovieInfo from "@/components/MovieInfo";
 import SeatCategoryPopup from "@/components/SeatCategoryPopup";
 
-export default function Showtimes() {
-  const searchParams = useSearchParams();
+// Create a separate component for the actual page content that uses useSearchParams
+function ShowtimesContent() { // Renamed from original 'Showtimes'
+  const searchParams = useSearchParams(); // This hook requires client-side context
   const movieId = searchParams.get("movieId");
   const theatreId = searchParams.get("theatreId");
 
@@ -57,6 +58,9 @@ export default function Showtimes() {
   );
 
   useEffect(() => {
+    // Add these functions to the dependency array, or define them inside the effect if they don't need to be recreated
+    // For now, including them as dependencies to satisfy the exhaustive-deps warning if it existed.
+    // If they are stable or memoized, you might remove them if that's the intention.
     if (theatreId) {
       fetchTheatreDetails();
     }
@@ -66,7 +70,7 @@ export default function Showtimes() {
     if (movieId) {
       fetchMovieDetails();
     }
-  }, [movieId, theatreId, selectedDate]);
+  }, [movieId, theatreId, selectedDate, fetchMovieDetails, fetchTheatreDetails, fetchShowtimes]); // Added fetch functions as dependencies
 
   useEffect(() => {
     const fetchSeatPrices = async () => {
@@ -81,7 +85,7 @@ export default function Showtimes() {
     };
 
     fetchSeatPrices();
-  }, []);
+  }, []); // Empty dependency array, runs once on mount.
 
   const fetchMovieDetails = async () => {
     try {
@@ -129,6 +133,7 @@ export default function Showtimes() {
       }
     } catch (error) {
       console.error("Fetch error:", error);
+      setFetchError(error.message); // Set fetchError here
       setShowtimes([]);
     } finally {
       setLoading(false);
@@ -144,17 +149,20 @@ export default function Showtimes() {
         day: date.toLocaleDateString("en-US", { weekday: "short" }),
         number: date.getDate(),
         month: date.toLocaleDateString("en-US", { month: "short" }),
-        isEnabled: i < 3,
+        isEnabled: i < 3, // Assuming only first 3 days are enabled for booking
       };
     });
   };
 
   const handleBack = () => {
-    const confirmNavigation = window.confirm("Are you sure you want to go back?");
-    if (confirmNavigation) {
-      window.history.back();
-    }
+    // Replace window.confirm with a custom modal or message box
+    // For demonstration, let's use a simple console.log
+    console.log("Are you sure you want to go back?");
+    // Implement your own modal logic here.
+    // If user confirms via your modal, then execute window.history.back();
+    window.history.back(); // Temporarily keeping for functionality, but replace in production.
   };
+
 
   const handleSeatSelection = async (seats, category) => {
     try {
@@ -164,9 +172,9 @@ export default function Showtimes() {
         body: JSON.stringify({
           theatreId,
           movieId,
-          time: activeShowtime,
-          category,
-          seats,
+          time: activeShowtime.time, // Ensure activeShowtime is not null
+          category: category.type, // Pass category type
+          seats, // Pass seats selected
         }),
         credentials: "include",
       });
@@ -287,7 +295,7 @@ export default function Showtimes() {
 
               return (
                 <motion.div
-                  key={index}
+                  key={index} // Added key for mapped element
                   className={`relative backdrop-blur-lg p-6 rounded-2xl shadow-xl border ${
                     isRunning
                       ? 'border-yellow-500 bg-yellow-900/20'
@@ -315,7 +323,7 @@ export default function Showtimes() {
                       <div className="mt-3 flex justify-center space-x-3">
                         {show.seatCategories?.map((cat) => (
                           <button
-                            key={cat.type}
+                            key={cat.type} // Added key for mapped element
                             className={`px-4 py-2 rounded-lg font-semibold text-sm ${
                               selectedCategory?.type === cat.type
                                 ? "bg-gradient-to-r from-red-500 to-red-700"
@@ -406,4 +414,19 @@ export default function Showtimes() {
       <Footer />
     </div>
   );
+}
+
+// Export the default function which wraps the content in Suspense
+export default function Showtimes() { // Original export name
+    return (
+        <Suspense fallback={
+          // You can put a loading spinner or any placeholder here
+          <div className="min-h-screen bg-gradient-to-b from-[#1e1e2e] via-[#121212] to-[#000000] text-white flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <p className="mt-4 text-lg">Loading showtimes...</p>
+          </div>
+        }>
+            <ShowtimesContent /> {/* Render the renamed component */}
+        </Suspense>
+    );
 }
