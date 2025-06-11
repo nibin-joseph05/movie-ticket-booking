@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaCrosshairs } from "react-icons/fa";
+import { FaCrosshairs, FaBars, FaTimes } from "react-icons/fa"; // Added FaBars and FaTimes for menu icons
 import { debounce } from "lodash";
 import { usePathname } from "next/navigation";
 
@@ -12,6 +12,7 @@ export default function Header({ onLogout }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
   const router = useRouter();
   const pathname = usePathname();
 
@@ -94,25 +95,33 @@ export default function Header({ onLogout }) {
     router.push(`/movies/${movieId}`);
     setSearchQuery("");
     setSearchResults([]);
+    setIsMobileMenuOpen(false); // Close mobile menu on navigation
   };
 
   return (
     <header className="bg-gray-900 text-white py-5 shadow-lg relative">
-      <div className="container mx-auto flex justify-between items-center px-6">
+      <div className="container mx-auto flex justify-between items-center px-4 md:px-6"> {/* Adjusted px for mobile */}
         {/* Logo */}
-        <div className="flex items-center space-x-3">
-          <img src="/logo.webp" alt="Logo" className="w-[50px] h-auto" />
-          <span className="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg tracking-wide">
+        <div className="flex items-center space-x-2 md:space-x-3"> {/* Adjusted space-x for mobile */}
+          <img src="/logo.webp" alt="Logo" className="w-[40px] md:w-[50px] h-auto" /> {/* Adjusted logo size for mobile */}
+          <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg tracking-wide">
             MovieFlix
           </span>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
+        {/* Hamburger Menu Icon (Mobile) */}
+        <div className="md:hidden flex items-center">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white focus:outline-none">
+            {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+          </button>
+        </div>
+
+        {/* Search Bar (Desktop and Mobile) */}
+        <div className="relative flex-grow mx-4 hidden md:block"> {/* Hidden on mobile, shown on desktop */}
           <input
             type="text"
             placeholder="🔍 Search for Movies..."
-            className="w-118 px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
+            className="w-full px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
             value={searchQuery}
             onChange={handleSearch}
           />
@@ -132,7 +141,7 @@ export default function Header({ onLogout }) {
                     <img
                       src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                       alt={movie.title}
-                      className="w-16 h-24 object-cover rounded-lg mr-3"
+                      className="w-12 h-18 object-cover rounded-lg mr-3" // Adjusted image size for search results
                     />
                     <div>
                       <p className="font-semibold">{movie.title}</p>
@@ -147,7 +156,7 @@ export default function Header({ onLogout }) {
           )}
         </div>
 
-        {/* Navigation Links */}
+        {/* Navigation Links (Desktop) */}
         <nav className="hidden md:flex space-x-6 text-lg">
           <Link href="/" className="hover:text-red-500 transition-all duration-200">
             Home
@@ -164,11 +173,10 @@ export default function Header({ onLogout }) {
           <Link href="/about-us" className="hover:text-red-500 transition-all duration-200">
             About Us
           </Link>
-
         </nav>
 
-        {/* User Actions */}
-        <div className="flex items-center space-x-4">
+        {/* User Actions (Desktop) */}
+        <div className="hidden md:flex items-center space-x-4">
           <button
             onClick={() => router.push("/theatre")}
             disabled={pathname === "/theatre"}
@@ -200,6 +208,107 @@ export default function Header({ onLogout }) {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 text-white flex flex-col items-center py-6 space-y-4 z-40">
+          {/* Search Bar (Mobile) */}
+          <div className="relative w-11/12 px-4 mb-4">
+            <input
+              type="text"
+              placeholder="🔍 Search for Movies..."
+              className="w-full px-5 py-3 text-black bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 shadow-md text-md"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+            {searchQuery && (
+              <div className="absolute top-full left-0 w-full bg-white text-black border border-gray-300 rounded-lg shadow-lg mt-1 z-50">
+                {loading ? (
+                  <div className="p-3 text-center text-gray-500">Loading...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((movie) => (
+                    <div
+                      key={movie.id}
+                      className="flex items-center p-3 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => handleMovieClick(movie.id)}
+                    >
+                      <img
+                        src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                        alt={movie.title}
+                        className="w-12 h-18 object-cover rounded-lg mr-3"
+                      />
+                      <div>
+                        <p className="font-semibold">{movie.title}</p>
+                        <p className="text-gray-500 text-sm">{movie.year}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-gray-500">No results found</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Link href="/" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
+            Home
+          </Link>
+          <Link href="/movies" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
+            Movies
+          </Link>
+          <Link href="/my-account" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
+            My Account
+          </Link>
+          <Link href="/my-bookings" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
+            My Bookings
+          </Link>
+          <Link href="/about-us" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
+            About Us
+          </Link>
+
+          {/* Mobile User Actions */}
+          <div className="flex flex-col space-y-4 pt-4 w-full items-center">
+            <button
+              onClick={() => {
+                router.push("/theatre");
+                setIsMobileMenuOpen(false);
+              }}
+              disabled={pathname === "/theatre"}
+              className={`flex items-center justify-center w-11/12 px-4 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300
+                bg-blue-600 border-2 border-white text-white
+                ${
+                  pathname === "/theatre"
+                    ? "cursor-not-allowed opacity-60"
+                    : "hover:bg-blue-700 hover:shadow-lg transform hover:scale-105"
+                }`}
+            >
+              <FaCrosshairs className="mr-2 text-base" />
+              Find Theaters
+            </button>
+
+            {isLoggedIn ? (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="bg-red-500 border-2 border-white w-11/12 px-4 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:bg-red-700 hover:shadow-lg transform hover:scale-105"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link href="/login" className="w-11/12">
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 border-2 border-white w-full px-4 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 hover:from-pink-500 hover:to-red-500 hover:shadow-lg transform hover:scale-105"
+                >
+                  Sign In
+                </button>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
