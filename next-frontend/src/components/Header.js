@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaCrosshairs, FaBars, FaTimes } from "react-icons/fa"; // Added FaBars and FaTimes for menu icons
+import { FaCrosshairs, FaBars, FaTimes } from "react-icons/fa";
 import { debounce } from "lodash";
 import { usePathname } from "next/navigation";
 
@@ -12,7 +12,7 @@ export default function Header({ onLogout }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -100,10 +100,10 @@ export default function Header({ onLogout }) {
 
   return (
     <header className="bg-gray-900 text-white py-5 shadow-lg relative">
-      <div className="container mx-auto flex justify-between items-center px-4 md:px-6"> {/* Adjusted px for mobile */}
+      <div className="container mx-auto flex justify-between items-center px-4 md:px-6">
         {/* Logo */}
-        <div className="flex items-center space-x-2 md:space-x-3"> {/* Adjusted space-x for mobile */}
-          <img src="/logo.webp" alt="Logo" className="w-[40px] md:w-[50px] h-auto" /> {/* Adjusted logo size for mobile */}
+        <div className="flex items-center space-x-2 md:space-x-3">
+          <img src="/logo.webp" alt="Logo" className="w-[40px] md:w-[50px] h-auto" />
           <span className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 text-transparent bg-clip-text drop-shadow-lg tracking-wide">
             MovieFlix
           </span>
@@ -117,7 +117,7 @@ export default function Header({ onLogout }) {
         </div>
 
         {/* Search Bar (Desktop and Mobile) */}
-        <div className="relative flex-grow mx-4 hidden md:block"> {/* Hidden on mobile, shown on desktop */}
+        <div className="relative flex-grow mx-4 hidden md:block">
           <input
             type="text"
             placeholder="🔍 Search for Movies..."
@@ -141,7 +141,7 @@ export default function Header({ onLogout }) {
                     <img
                       src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                       alt={movie.title}
-                      className="w-12 h-18 object-cover rounded-lg mr-3" // Adjusted image size for search results
+                      className="w-12 h-18 object-cover rounded-lg mr-3"
                     />
                     <div>
                       <p className="font-semibold">{movie.title}</p>
@@ -211,7 +211,7 @@ export default function Header({ onLogout }) {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 text-white flex flex-col items-center py-6 space-y-4 z-40">
+        <div className="md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 text-white flex flex-col items-center py-8 space-y-6 z-40"> {/* Increased py and space-y */}
           {/* Search Bar (Mobile) */}
           <div className="relative w-11/12 px-4 mb-4">
             <input
@@ -222,7 +222,7 @@ export default function Header({ onLogout }) {
               onChange={handleSearch}
             />
             {searchQuery && (
-              <div className="absolute top-full left-0 w-full bg-white text-black border border-gray-300 rounded-lg shadow-lg mt-1 z-50">
+              <div className="absolute top-full left-0 w-full bg-white text-black border border-gray-300 rounded-lg shadow-lg mt-1 z-50"> {/* Ensured z-50 for search results */}
                 {loading ? (
                   <div className="p-3 text-center text-gray-500">Loading...</div>
                 ) : searchResults.length > 0 ? (
@@ -250,6 +250,7 @@ export default function Header({ onLogout }) {
             )}
           </div>
 
+          {/* Navigation Links */}
           <Link href="/" className="text-lg hover:text-red-500 transition-all duration-200" onClick={() => setIsMobileMenuOpen(false)}>
             Home
           </Link>
@@ -267,7 +268,7 @@ export default function Header({ onLogout }) {
           </Link>
 
           {/* Mobile User Actions */}
-          <div className="flex flex-col space-y-4 pt-4 w-full items-center">
+          <div className="flex flex-col space-y-4 pt-6 w-full items-center"> {/* Increased pt */}
             <button
               onClick={() => {
                 router.push("/theatre");
